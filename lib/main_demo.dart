@@ -52,18 +52,11 @@ class DemoState extends ChangeNotifier {
 
   int _timeToMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
-  String _formatTime(TimeOfDay t) {
-    final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
-    final m = t.minute.toString().padLeft(2, '0');
-    final p = t.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$h:$m $p';
-  }
-
   String getScheduleSpeech() {
     if (_events.isEmpty) return "You have nothing scheduled today.";
     final buffer = StringBuffer("Hi! You have ${_events.length} events today. ");
     for (final e in _events) {
-      buffer.write("${e.title} at ${_formatTime(e.time)}. ");
+      buffer.write("${e.title} at ${e.time.format(null)}. ");
     }
     return buffer.toString();
   }
