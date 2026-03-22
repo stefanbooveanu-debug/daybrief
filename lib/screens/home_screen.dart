@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
 import '../widgets/add_event_sheet_demo.dart';
@@ -9,7 +12,16 @@ import 'month_view_screen.dart';
 import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Map<String, Color> categoryColors;
+  final Function(Map<String, Color>)? onCategoryColorsChanged;
+  final Function(bool)? onThemeChanged;
+  
+  const HomeScreen({
+    super.key,
+    required this.categoryColors,
+    this.onCategoryColorsChanged,
+    this.onThemeChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,7 +33,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _fabAnimController;
   late Animation<double> _fabScaleAnim;
   late Animation<double> _fabRotateAnim;
-  bool _showSearch = false;
+  
+  final SpeechToText _speech = SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _speechEnabled = false;
+  bool _isListening = false;
+  bool _isSpeaking = false;
 
   @override
   void initState() {
@@ -37,6 +54,147 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       CurvedAnimation(parent: _fabAnimController, curve: Curves.easeInOut),
     );
     _addSampleEvents();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    _speechEnabled = await _speech.initialize(
+      onError: (e) => print('Speech error: $e'),
+      onStatus: (e) => print('Speech status: $e'),
+    );
+    
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.55);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.1);
+    
+    final voices = await _tts.getVoices;
+    if (voices != null && voices.isNotEmpty) {
+      for (var voice in voices) {
+        if (voice.toString().contains('en-US') && 
+            (voice.toString().contains('female') || voice.toString().contains('Feminine') || voice.toString().contains('en-US-Standard'))) {
+          await _tts.setVoice(voice);
+          break;
+        }
+      }
+    }
+    
+    if (!kIsWeb) {
+      await _tts.setSharedInstance(true);
+      await _tts.awaitSpeakCompletion(true);
+    }
+    
+    _tts.setStartHandler(() {
+      setState(() => _isSpeaking = true);
+    });
+    
+    _tts.setCompletionHandler(() {
+      setState(() => _isSpeaking = false);
+    });
+    
+    if (mounted) setState(() {});
+  }
+
+  void _startListening() async {
+    if (!_speechEnabled) {
+      _showMessage('Speech not available');
+      return;
+    }
+    
+    setState(() => _isListening = true);
+    
+    await _speech.listen(
+      onResult: (result) {
+        if (result.finalResult) {
+          _handleVoiceCommand(result.recognizedWords);
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(milliseconds: 800),
+    );
+  }
+
+  void _stopListening() async {
+    await _speech.stop();
+    setState(() => _isListening = false);
+  }
+
+  void _handleVoiceCommand(String text) async {
+    final lowerText = text.toLowerCase();
+    final hasWakeWord = lowerText.contains('hey daybrief') || lowerText.contains('daybrief');
+    final commandText = hasWakeWord ? lowerText.replaceAll(RegExp(r'hey daybrief|daybrief'), '').trim() : lowerText;
+    
+    if (!hasWakeWord && !_isListening) return;
+    
+    if (commandText.contains('what day is it') || commandText.contains("what's today's date") || commandText.contains('what is the date')) {
+      final now = DateTime.now();
+      final dayName = DateFormat('EEEE').format(now);
+      final monthName = DateFormat('MMMM').format(now);
+      await _speak("Today is $dayName, ${monthName} ${now.day}, ${now.year}");
+    }
+    else if (commandText.contains('what time is it') || commandText.contains("what's the time") || commandText.contains('tell me the time')) {
+      final now = DateTime.now();
+      final timeStr = DateFormat('h:mm a').format(now);
+      await _speak("It's $timeStr");
+    }
+    else if (commandText.contains('what do i have today') || 
+        commandText.contains('what do i have scheduled') ||
+        commandText.contains("what's on my schedule") ||
+        commandText.contains('my schedule')) {
+      await _speakSchedule();
+    } 
+    else if (commandText.contains('add event') || commandText.contains('new event') || commandText.contains('schedule something')) {
+      _showAddEventSheet();
+      await _speak('Opening add event');
+    }
+    else if (commandText.contains('hello') || commandText.contains('hi') || commandText.contains('hey')) {
+      await _speak('Hey there! How can I help you with your calendar today?');
+    }
+    else if (commandText.contains('help') || commandText.contains('what can you do')) {
+      await _speak('I can help you with your calendar. Try saying: what day is it, what time is it, what do I have today, or add event.');
+    }
+    else if (commandText.contains('thank you') || commandText.contains('thanks')) {
+      await _speak("You're welcome!");
+    }
+    else if (commandText.isNotEmpty) {
+      await _speak("I'm not sure how to help with that. Try saying help to hear what I can do.");
+    }
+  }
+
+  Future<void> _speak(String text) async {
+    await _tts.speak(text);
+  }
+
+  Future<void> _speakSchedule() async {
+    final todayEvents = _events.where((e) => 
+      e.dateTime.year == DateTime.now().year &&
+      e.dateTime.month == DateTime.now().month &&
+      e.dateTime.day == DateTime.now().day
+    ).toList();
+    
+    if (todayEvents.isEmpty) {
+      await _speak("Hey! You have nothing planned for today. Enjoy your free time!");
+    } else if (todayEvents.length == 1) {
+      final e = todayEvents.first;
+      final time = DateFormat('h:mm a').format(e.dateTime);
+      final desc = (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
+      await _speak("Hey! Today you need to go to ${e.title}$desc at $time");
+    } else {
+      final parts = <String>[];
+      for (final e in todayEvents) {
+        final time = DateFormat('h:mm a').format(e.dateTime);
+        final desc = (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
+        parts.add("${e.title}$desc at $time");
+      }
+      await _speak("Hey! Today you have ${todayEvents.length} things to do. ${parts.join('. ')}");
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating),
+    );
   }
 
   void _addSampleEvents() {
@@ -52,6 +210,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _fabAnimController.dispose();
+    _speech.stop();
+    _tts.stop();
     super.dispose();
   }
 
@@ -102,7 +262,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _navigateToSettings() {
-    Navigator.of(context).push(_createRoute(const SettingsScreen()));
+    Navigator.of(context).push(_createRoute(SettingsScreen(
+      onThemeChanged: widget.onThemeChanged,
+      onColorsChanged: widget.onCategoryColorsChanged,
+    )));
   }
 
   PageRouteBuilder _createRoute(Widget page) {
@@ -144,18 +307,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ],
         ),
       ),
-      floatingActionButton: RotationTransition(
-        turns: _fabRotateAnim,
-        child: ScaleTransition(
-          scale: _fabScaleAnim,
-          child: FloatingActionButton.extended(
-            onPressed: _showAddEventSheet,
-            backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
-            elevation: 8,
-            icon: const Icon(Icons.add_rounded, size: 28),
-            label: const Text('New Event', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_speechEnabled)
+            FloatingActionButton(
+              heroTag: 'voice',
+              onPressed: _isListening ? _stopListening : _startListening,
+              backgroundColor: _isListening ? Colors.red : (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
+              child: Icon(_isListening ? Icons.stop : Icons.mic, color: Colors.white),
+            ),
+          if (_speechEnabled) const SizedBox(width: 12),
+          RotationTransition(
+            turns: _fabRotateAnim,
+            child: ScaleTransition(
+              scale: _fabScaleAnim,
+              child: FloatingActionButton.extended(
+                heroTag: 'add',
+                onPressed: _showAddEventSheet,
+                backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+                elevation: 8,
+                icon: const Icon(Icons.add_rounded, size: 28),
+                label: const Text('New Event', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _buildBottomNav(isDark),
@@ -222,22 +399,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isDark 
-              ? [const Color(0xFF1E1E1E), const Color(0xFF2D2D2D)]
-              : [Colors.white, const Color(0xFFF8F9FA)],
+          colors: isDark ? [const Color(0xFF1E1E1E), const Color(0xFF2D2D2D)] : [Colors.white, const Color(0xFFF8F9FA)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: (isDark ? Colors.black : Colors.grey).withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: (isDark ? Colors.black : Colors.grey).withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
           _buildStatItem('Upcoming', '$upcomingCount', Icons.schedule, const Color(0xFF1A73E8), isDark),
           Container(width: 1, height: 40, color: isDark ? Colors.grey[800] : Colors.grey[200], margin: const EdgeInsets.symmetric(horizontal: 16)),
-          _buildStatItem('Total Events', '${_events.length}', Icons.event_note, const Color(0xFF34A853), isDark),
+          _buildStatItem('Total', '${_events.length}', Icons.event_note, const Color(0xFF34A853), isDark),
           Container(width: 1, height: 40, color: isDark ? Colors.grey[800] : Colors.grey[200], margin: const EdgeInsets.symmetric(horizontal: 16)),
           _buildStatItem('Today', '${_getFilteredEvents().length}', Icons.today, const Color(0xFF9334E6), isDark),
         ],
@@ -260,7 +433,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildMiniCalendarStrip(bool isDark) {
     final today = DateTime.now();
-    final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
     
     return Container(
       height: 85,
@@ -359,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Text('No events scheduled', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
             const SizedBox(height: 8),
             Text('Tap the button below to add one', style: TextStyle(fontSize: 15, color: isDark ? Colors.grey[400] : Colors.grey[600])),
-            const SizedBox(height: 100),
+            const SizedBox(height: 140),
           ],
         ),
       );
@@ -367,7 +539,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 180),
       itemCount: dayEvents.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {

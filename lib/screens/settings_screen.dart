@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
+  final Function(Map<String, Color>)? onColorsChanged;
   
-  const SettingsScreen({super.key, this.onThemeChanged});
+  const SettingsScreen({super.key, this.onThemeChanged, this.onColorsChanged});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -11,9 +12,18 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifications = true;
+  bool _dailySummary = true;
   bool _voiceAssistant = true;
   bool _soundEffects = true;
   bool _hapticFeedback = true;
+  
+  Map<String, Color> _categoryColors = {
+    'Work': const Color(0xFF1A73E8),
+    'Personal': const Color(0xFF34A853),
+    'Health': const Color(0xFFEA4335),
+    'Social': const Color(0xFF9334E6),
+    'Shopping': const Color(0xFFFBBC04),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +59,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 isDark,
                 (value) {
                   widget.onThemeChanged?.call(value);
-                  Navigator.pop(context);
                 },
                 isDark: isDark,
               ),
@@ -72,8 +81,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Daily Summary',
                 'Morning schedule summary',
                 Icons.summarize_outlined,
-                _notifications,
-                (value) => setState(() => _notifications = value),
+                _dailySummary,
+                (value) => setState(() => _dailySummary = value),
                 isDark: isDark,
               ),
             ],
@@ -114,11 +123,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             'Category Colors',
             [
-              _buildColorTile('Work', const Color(0xFF1A73E8), Icons.work_outline, isDark),
-              _buildColorTile('Personal', const Color(0xFF34A853), Icons.person_outline, isDark),
-              _buildColorTile('Health', const Color(0xFFEA4335), Icons.favorite_outline, isDark),
-              _buildColorTile('Social', const Color(0xFF9334E6), Icons.people_outline, isDark),
-              _buildColorTile('Shopping', const Color(0xFFFBBC04), Icons.shopping_cart_outlined, isDark),
+              _buildColorTile('Work', _categoryColors['Work']!, Icons.work_outline, isDark),
+              _buildColorTile('Personal', _categoryColors['Personal']!, Icons.person_outline, isDark),
+              _buildColorTile('Health', _categoryColors['Health']!, Icons.favorite_outline, isDark),
+              _buildColorTile('Social', _categoryColors['Social']!, Icons.people_outline, isDark),
+              _buildColorTile('Shopping', _categoryColors['Shopping']!, Icons.shopping_cart_outlined, isDark),
             ],
             isDark: isDark,
           ),
@@ -264,6 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildColorTile(String name, Color color, IconData icon, bool isDark) {
     return ListTile(
+      onTap: () => _showColorPicker(name, color),
       leading: Container(
         width: 40,
         height: 40,
@@ -286,7 +296,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
+          border: Border.all(color: Colors.white24, width: 2),
         ),
+      ),
+    );
+  }
+
+  void _showColorPicker(String category, Color currentColor) {
+    final colors = [
+      const Color(0xFF1A73E8),
+      const Color(0xFF34A853),
+      const Color(0xFFEA4335),
+      const Color(0xFF9334E6),
+      const Color(0xFFFBBC04),
+      const Color(0xFFFF6D00),
+      const Color(0xFF00ACC1),
+      const Color(0xFFE91E63),
+      const Color(0xFF607D8B),
+      const Color(0xFF795548),
+    ];
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Choose color for $category'),
+        content: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: colors.map((c) => GestureDetector(
+            onTap: () {
+              setState(() => _categoryColors[category] = c);
+              widget.onColorsChanged?.call(_categoryColors);
+              Navigator.pop(context);
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: c,
+                shape: BoxShape.circle,
+                border: c == currentColor 
+                    ? Border.all(color: Colors.white, width: 3) 
+                    : null,
+                boxShadow: c == currentColor 
+                    ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 8)] 
+                    : null,
+              ),
+              child: c == currentColor ? const Icon(Icons.check, color: Colors.white) : null,
+            ),
+          )).toList(),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        ],
       ),
     );
   }
