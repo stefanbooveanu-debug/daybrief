@@ -200,10 +200,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _addSampleEvents() {
     final now = DateTime.now();
     _events = [
-      Event(id: '1', title: 'Team Standup', dateTime: DateTime(now.year, now.month, now.day, 9, 0), description: 'Daily sync with the team', userId: 'demo'),
-      Event(id: '2', title: 'Gym Workout', dateTime: DateTime(now.year, now.month, now.day, 18, 0), description: 'Leg day session', userId: 'demo'),
-      Event(id: '3', title: 'Coffee Break', dateTime: DateTime(now.year, now.month, now.day + 1, 14, 30), description: 'Meet with Alex', userId: 'demo'),
-      Event(id: '4', title: 'Project Deadline', dateTime: DateTime(now.year, now.month, now.day + 2, 17, 0), description: 'Submit final deliverables', userId: 'demo'),
+      Event(id: '1', title: 'Team Standup', dateTime: DateTime(now.year, now.month, now.day, 9, 0), description: 'Daily sync with the team', category: 'Work', userId: 'demo'),
+      Event(id: '2', title: 'Gym Workout', dateTime: DateTime(now.year, now.month, now.day, 18, 0), description: 'Leg day session', category: 'Health', userId: 'demo'),
+      Event(id: '3', title: 'Coffee Break', dateTime: DateTime(now.year, now.month, now.day + 1, 14, 30), description: 'Meet with Alex', category: 'Personal', userId: 'demo'),
+      Event(id: '4', title: 'Project Deadline', dateTime: DateTime(now.year, now.month, now.day + 2, 17, 0), description: 'Submit final deliverables', category: 'Work', userId: 'demo'),
     ];
   }
 
@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddEventSheetDemo(onEventAdded: _addEvent),
+      builder: (context) => AddEventSheetDemo(onEventAdded: _addEvent, categoryColors: widget.categoryColors),
     );
   }
 
@@ -243,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       events: _events,
       onAddEvent: _addEvent,
       onDeleteEvent: _deleteEvent,
+      categoryColors: widget.categoryColors,
     )));
   }
 
@@ -251,6 +252,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       events: _events,
       onAddEvent: _addEvent,
       onSelectDate: (date) => setState(() => _selectedDate = date),
+      categoryColors: widget.categoryColors,
     )));
   }
 
@@ -263,6 +265,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _navigateToSettings() {
     Navigator.of(context).push(_createRoute(SettingsScreen(
+      categoryColors: widget.categoryColors,
       onThemeChanged: widget.onThemeChanged,
       onColorsChanged: widget.onCategoryColorsChanged,
     )));
@@ -575,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           duration: Duration(milliseconds: 300 + (index * 50)),
           curve: Curves.easeOutCubic,
           builder: (context, value, child) => Transform.translate(offset: Offset(50 * (1 - value), 0), child: Opacity(opacity: value, child: child)),
-          child: Padding(padding: const EdgeInsets.only(bottom: 12), child: EventCard(event: event, onDelete: () => _deleteEvent(event.id), isDark: isDark)),
+          child: Padding(padding: const EdgeInsets.only(bottom: 12), child: EventCard(event: event, onDelete: () => _deleteEvent(event.id), isDark: isDark, categoryColors: widget.categoryColors)),
         );
       },
     );

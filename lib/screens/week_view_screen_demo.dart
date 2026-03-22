@@ -8,12 +8,14 @@ class WeekViewScreenDemo extends StatefulWidget {
   final List<Event> events;
   final Function(Event) onAddEvent;
   final Function(String) onDeleteEvent;
+  final Map<String, Color> categoryColors;
 
   const WeekViewScreenDemo({
     super.key,
     required this.events,
     required this.onAddEvent,
     required this.onDeleteEvent,
+    required this.categoryColors,
   });
 
   @override
@@ -68,6 +70,7 @@ class _WeekViewScreenDemoState extends State<WeekViewScreenDemo> {
       backgroundColor: Colors.transparent,
       builder: (context) => AddEventSheetDemo(
         onEventAdded: widget.onAddEvent,
+        categoryColors: widget.categoryColors,
       ),
     );
   }

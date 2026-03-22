@@ -4,8 +4,9 @@ import '../models/event.dart';
 
 class AddEventSheetDemo extends StatefulWidget {
   final Function(Event) onEventAdded;
+  final Map<String, Color> categoryColors;
 
-  const AddEventSheetDemo({super.key, required this.onEventAdded});
+  const AddEventSheetDemo({super.key, required this.onEventAdded, required this.categoryColors});
 
   @override
   State<AddEventSheetDemo> createState() => _AddEventSheetDemoState();
@@ -23,12 +24,12 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
   late Animation<double> _slideAnim;
   late Animation<double> _fadeAnim;
 
-  final List<Map<String, dynamic>> _categories = [
-    {'name': 'Work', 'icon': Icons.work_outline, 'color': const Color(0xFF1A73E8)},
-    {'name': 'Personal', 'icon': Icons.person_outline, 'color': const Color(0xFF34A853)},
-    {'name': 'Health', 'icon': Icons.favorite_outline, 'color': const Color(0xFFEA4335)},
-    {'name': 'Social', 'icon': Icons.people_outline, 'color': const Color(0xFF9334E6)},
-    {'name': 'Shopping', 'icon': Icons.shopping_cart_outlined, 'color': const Color(0xFFFBBC04)},
+  List<Map<String, dynamic>> get _categories => [
+    {'name': 'Work', 'icon': Icons.work_outline, 'color': widget.categoryColors['Work'] ?? const Color(0xFF1A73E8)},
+    {'name': 'Personal', 'icon': Icons.person_outline, 'color': widget.categoryColors['Personal'] ?? const Color(0xFF34A853)},
+    {'name': 'Health', 'icon': Icons.favorite_outline, 'color': widget.categoryColors['Health'] ?? const Color(0xFFEA4335)},
+    {'name': 'Social', 'icon': Icons.people_outline, 'color': widget.categoryColors['Social'] ?? const Color(0xFF9334E6)},
+    {'name': 'Shopping', 'icon': Icons.shopping_cart_outlined, 'color': widget.categoryColors['Shopping'] ?? const Color(0xFFFBBC04)},
     {'name': 'Other', 'icon': Icons.more_horiz, 'color': const Color(0xFF5F6368)},
   ];
 
@@ -72,6 +73,7 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
       title: _titleController.text.trim(),
       dateTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _selectedTime.hour, _selectedTime.minute),
       description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+      category: _selectedCategory,
       userId: 'demo-user',
     );
     widget.onEventAdded(event);

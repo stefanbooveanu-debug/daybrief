@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
   final Function(Map<String, Color>)? onColorsChanged;
+  final Map<String, Color> categoryColors;
   
-  const SettingsScreen({super.key, this.onThemeChanged, this.onColorsChanged});
+  const SettingsScreen({
+    super.key,
+    this.onThemeChanged,
+    this.onColorsChanged,
+    required this.categoryColors,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -17,14 +23,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _soundEffects = true;
   bool _hapticFeedback = true;
   
-  Map<String, Color> _categoryColors = {
-    'Work': const Color(0xFF1A73E8),
-    'Personal': const Color(0xFF34A853),
-    'Health': const Color(0xFFEA4335),
-    'Social': const Color(0xFF9334E6),
-    'Shopping': const Color(0xFFFBBC04),
-  };
+  late Map<String, Color> _categoryColors;
 
+  @override
+  void initState() {
+    super.initState();
+    _categoryColors = Map.from(widget.categoryColors);
+  }
+  
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -316,39 +322,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const Color(0xFF795548),
     ];
     
+    Color selectedColor = currentColor;
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Choose color for $category'),
-        content: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: colors.map((c) => GestureDetector(
-            onTap: () {
-              setState(() => _categoryColors[category] = c);
-              widget.onColorsChanged?.call(_categoryColors);
-              Navigator.pop(context);
-            },
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: c,
-                shape: BoxShape.circle,
-                border: c == currentColor 
-                    ? Border.all(color: Colors.white, width: 3) 
-                    : null,
-                boxShadow: c == currentColor 
-                    ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 8)] 
-                    : null,
-              ),
-              child: c == currentColor ? const Icon(Icons.check, color: Colors.white) : null,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AlertDialog(
+            title: Text('Choose color for $category'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: colors.map((c) => GestureDetector(
+                    onTap: () {
+                      setDialogState(() => selectedColor = c);
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: c == selectedColor 
+                            ? Border.all(color: Colors.white, width: 3) 
+                            : Border.all(color: Colors.grey.withOpacity(0.3), width: 1),
+                        boxShadow: c == selectedColor 
+                            ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 8)] 
+                            : null,
+                      ),
+                      child: c == selectedColor ? const Icon(Icons.check, color: Colors.white, size: 24) : null,
+                    ),
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF1F3F4),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: selectedColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Selected',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF202124),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          )).toList(),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text('Cancel', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+              ),
+              FilledButton(
+                onPressed: () {
+                  setState(() => _categoryColors[category] = selectedColor);
+                  widget.onColorsChanged?.call(Map.from(_categoryColors));
+                  Navigator.pop(dialogContext);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+                ),
+                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

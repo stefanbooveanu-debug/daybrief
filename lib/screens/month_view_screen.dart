@@ -8,12 +8,14 @@ class MonthViewScreen extends StatefulWidget {
   final List<Event> events;
   final Function(Event) onAddEvent;
   final Function(DateTime) onSelectDate;
+  final Map<String, Color> categoryColors;
 
   const MonthViewScreen({
     super.key,
     required this.events,
     required this.onAddEvent,
     required this.onSelectDate,
+    required this.categoryColors,
   });
 
   @override
@@ -216,7 +218,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => AddEventSheetDemo(onEventAdded: widget.onAddEvent),
+          builder: (context) => AddEventSheetDemo(onEventAdded: widget.onAddEvent, categoryColors: widget.categoryColors),
         ),
         backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
         child: const Icon(Icons.add, color: Colors.white),

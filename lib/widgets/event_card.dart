@@ -6,32 +6,47 @@ class EventCard extends StatelessWidget {
   final Event event;
   final VoidCallback onDelete;
   final bool isDark;
+  final Map<String, Color> categoryColors;
 
   const EventCard({
     super.key,
     required this.event,
     required this.onDelete,
     this.isDark = false,
+    this.categoryColors = const {
+      'Work': Color(0xFF1A73E8),
+      'Personal': Color(0xFF34A853),
+      'Health': Color(0xFFEA4335),
+      'Social': Color(0xFF9334E6),
+      'Shopping': Color(0xFFFBBC04),
+    },
   });
 
   Color _getEventColor() {
+    final cat = event.category?.toLowerCase() ?? '';
+    if (cat.contains('work')) return categoryColors['Work'] ?? const Color(0xFF1A73E8);
+    if (cat.contains('personal')) return categoryColors['Personal'] ?? const Color(0xFF34A853);
+    if (cat.contains('health')) return categoryColors['Health'] ?? const Color(0xFFEA4335);
+    if (cat.contains('social')) return categoryColors['Social'] ?? const Color(0xFF9334E6);
+    if (cat.contains('shopping')) return categoryColors['Shopping'] ?? const Color(0xFFFBBC04);
+    
     final title = event.title.toLowerCase();
     if (title.contains('meeting') || title.contains('call') || title.contains('work') || title.contains('standup') || title.contains('deadline')) {
-      return const Color(0xFF1A73E8);
+      return categoryColors['Work'] ?? const Color(0xFF1A73E8);
     } else if (title.contains('gym') || title.contains('workout') || title.contains('run') || title.contains('yoga') || title.contains('sport')) {
-      return const Color(0xFFEA4335);
+      return categoryColors['Health'] ?? const Color(0xFFEA4335);
     } else if (title.contains('doctor') || title.contains('med') || title.contains('health') || title.contains('dentist')) {
-      return const Color(0xFF34A853);
+      return categoryColors['Health'] ?? const Color(0xFFEA4335);
     } else if (title.contains('birthday') || title.contains('party') || title.contains('social') || title.contains('hangout')) {
-      return const Color(0xFF9334E6);
+      return categoryColors['Social'] ?? const Color(0xFF9334E6);
     } else if (title.contains('shop') || title.contains('grocery') || title.contains('store')) {
-      return const Color(0xFFFBBC04);
+      return categoryColors['Shopping'] ?? const Color(0xFFFBBC04);
     } else if (title.contains('coffee') || title.contains('lunch') || title.contains('dinner') || title.contains('food')) {
-      return const Color(0xFFFF6D00);
+      return categoryColors['Personal'] ?? const Color(0xFF34A853);
     } else if (title.contains('travel') || title.contains('flight') || title.contains('trip')) {
-      return const Color(0xFF00ACC1);
+      return categoryColors['Social'] ?? const Color(0xFF9334E6);
     }
-    return isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8);
+    return categoryColors['Work'] ?? (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8));
   }
 
   IconData _getEventIcon() {

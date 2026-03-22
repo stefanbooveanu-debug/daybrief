@@ -3,6 +3,7 @@ class Event {
   final String title;
   final DateTime dateTime;
   final String? description;
+  final String? category;
   final String userId;
 
   Event({
@@ -10,6 +11,7 @@ class Event {
     required this.title,
     required this.dateTime,
     this.description,
+    this.category,
     required this.userId,
   });
 
@@ -19,6 +21,7 @@ class Event {
       'title': title,
       'dateTime': dateTime.toIso8601String(),
       'description': description,
+      'category': category,
       'userId': userId,
     };
   }
@@ -29,6 +32,7 @@ class Event {
       title: map['title'] ?? '',
       dateTime: DateTime.parse(map['dateTime']),
       description: map['description'],
+      category: map['category'],
       userId: map['userId'] ?? '',
     );
   }
@@ -38,6 +42,7 @@ class Event {
     String? title,
     DateTime? dateTime,
     String? description,
+    String? category,
     String? userId,
   }) {
     return Event(
@@ -45,6 +50,7 @@ class Event {
       title: title ?? this.title,
       dateTime: dateTime ?? this.dateTime,
       description: description ?? this.description,
+      category: category ?? this.category,
       userId: userId ?? this.userId,
     );
   }
