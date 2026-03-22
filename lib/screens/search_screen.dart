@@ -161,6 +161,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     )
                   : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       itemCount: _filteredEvents.length + 1,
                       itemBuilder: (context, index) {

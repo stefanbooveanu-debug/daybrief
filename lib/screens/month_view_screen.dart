@@ -196,6 +196,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                     ),
                     Expanded(
                       child: ListView.builder(
+                        physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         itemCount: selectedDayEvents.length,
                         itemBuilder: (context, index) => Padding(

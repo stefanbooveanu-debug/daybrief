@@ -366,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
 
     return ListView.builder(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
       itemCount: dayEvents.length + 1,
       itemBuilder: (context, index) {

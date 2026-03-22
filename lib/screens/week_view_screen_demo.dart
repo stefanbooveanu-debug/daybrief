@@ -312,6 +312,7 @@ class _WeekViewScreenDemoState extends State<WeekViewScreenDemo> {
                   ),
                 )
               : ListView.builder(
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
                   itemCount: dayEvents.length,
                   itemBuilder: (context, index) {
