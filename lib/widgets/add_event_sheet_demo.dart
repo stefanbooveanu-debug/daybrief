@@ -20,6 +20,7 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
   late TimeOfDay _selectedTime;
   late DateTime _selectedDate;
   String _selectedCategory = 'Other';
+  bool _reminderEnabled = true;
   late AnimationController _animController;
   late Animation<double> _slideAnim;
   late Animation<double> _fadeAnim;
@@ -74,6 +75,7 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
       dateTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _selectedTime.hour, _selectedTime.minute),
       description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
       category: _selectedCategory,
+      reminderEnabled: _reminderEnabled,
       userId: 'demo-user',
     );
     widget.onEventAdded(event);
@@ -180,6 +182,34 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
                   TextFormField(controller: _descriptionController,
                     decoration: InputDecoration(hintText: 'Notes (optional)', prefixIcon: Icon(Icons.notes_outlined, color: isDark ? Colors.grey[400] : const Color(0xFF5F6368)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA)), maxLines: 2),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.notifications_active_outlined, color: widget.categoryColors['Work'] ?? const Color(0xFF1A73E8)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Smart Reminder', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
+                              Text('Get notified 1 hour before', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _reminderEnabled,
+                          onChanged: (v) => setState(() => _reminderEnabled = v),
+                          activeColor: widget.categoryColors['Work'] ?? const Color(0xFF1A73E8),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 32),
                   FilledButton(
                     onPressed: _addEvent,

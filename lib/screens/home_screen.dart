@@ -200,10 +200,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _addSampleEvents() {
     final now = DateTime.now();
     _events = [
-      Event(id: '1', title: 'Team Standup', dateTime: DateTime(now.year, now.month, now.day, 9, 0), description: 'Daily sync with the team', category: 'Work', userId: 'demo'),
-      Event(id: '2', title: 'Gym Workout', dateTime: DateTime(now.year, now.month, now.day, 18, 0), description: 'Leg day session', category: 'Health', userId: 'demo'),
-      Event(id: '3', title: 'Coffee Break', dateTime: DateTime(now.year, now.month, now.day + 1, 14, 30), description: 'Meet with Alex', category: 'Personal', userId: 'demo'),
-      Event(id: '4', title: 'Project Deadline', dateTime: DateTime(now.year, now.month, now.day + 2, 17, 0), description: 'Submit final deliverables', category: 'Work', userId: 'demo'),
+      Event(id: '1', title: 'Team Standup', dateTime: DateTime(now.year, now.month, now.day, 9, 0), description: 'Daily sync with the team', category: 'Work', reminderEnabled: true, userId: 'demo'),
+      Event(id: '2', title: 'Gym Workout', dateTime: DateTime(now.year, now.month, now.day, 18, 0), description: 'Leg day session', category: 'Health', reminderEnabled: true, userId: 'demo'),
+      Event(id: '3', title: 'Coffee Break', dateTime: DateTime(now.year, now.month, now.day + 1, 14, 30), description: 'Meet with Alex', category: 'Personal', reminderEnabled: true, userId: 'demo'),
+      Event(id: '4', title: 'Project Deadline', dateTime: DateTime(now.year, now.month, now.day + 2, 17, 0), description: 'Submit final deliverables', category: 'Work', reminderEnabled: true, userId: 'demo'),
     ];
   }
 

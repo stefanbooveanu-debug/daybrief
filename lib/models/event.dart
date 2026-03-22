@@ -4,6 +4,7 @@ class Event {
   final DateTime dateTime;
   final String? description;
   final String? category;
+  final bool reminderEnabled;
   final String userId;
 
   Event({
@@ -12,8 +13,11 @@ class Event {
     required this.dateTime,
     this.description,
     this.category,
+    this.reminderEnabled = true,
     required this.userId,
   });
+
+  DateTime? get reminderTime => reminderEnabled ? dateTime.subtract(const Duration(hours: 1)) : null;
 
   Map<String, dynamic> toMap() {
     return {
@@ -22,6 +26,7 @@ class Event {
       'dateTime': dateTime.toIso8601String(),
       'description': description,
       'category': category,
+      'reminderEnabled': reminderEnabled,
       'userId': userId,
     };
   }
@@ -33,6 +38,7 @@ class Event {
       dateTime: DateTime.parse(map['dateTime']),
       description: map['description'],
       category: map['category'],
+      reminderEnabled: map['reminderEnabled'] ?? true,
       userId: map['userId'] ?? '',
     );
   }
@@ -43,6 +49,7 @@ class Event {
     DateTime? dateTime,
     String? description,
     String? category,
+    bool? reminderEnabled,
     String? userId,
   }) {
     return Event(
@@ -51,6 +58,7 @@ class Event {
       dateTime: dateTime ?? this.dateTime,
       description: description ?? this.description,
       category: category ?? this.category,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       userId: userId ?? this.userId,
     );
   }
