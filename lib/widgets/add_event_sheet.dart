@@ -6,7 +6,9 @@ import '../providers/auth_provider.dart';
 import '../models/event.dart';
 
 class AddEventSheet extends StatefulWidget {
-  const AddEventSheet({super.key});
+  final DateTime? initialDate;
+
+  const AddEventSheet({super.key, this.initialDate});
 
   @override
   State<AddEventSheet> createState() => _AddEventSheetState();
@@ -16,7 +18,15 @@ class _AddEventSheetState extends State<AddEventSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  late TimeOfDay _selectedTime;
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTime = TimeOfDay.now();
+    _selectedDate = widget.initialDate ?? DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -29,10 +39,44 @@ class _AddEventSheetState extends State<AddEventSheet> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A73E8),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _selectedTime) {
       setState(() {
         _selectedTime = picked;
+      });
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A73E8),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
       });
     }
   }
@@ -43,11 +87,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
     final eventProvider = context.read<EventProvider>();
     final authProvider = context.read<AuthProvider>();
 
-    final now = DateTime.now();
     final eventDateTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
       _selectedTime.hour,
       _selectedTime.minute,
     );
@@ -68,7 +111,9 @@ class _AddEventSheetState extends State<AddEventSheet> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added "${event.title}" at ${_selectedTime.format(context)}'),
+          content: Text('Added "${event.title}"'),
+          backgroundColor: const Color(0xFF1A73E8),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -82,6 +127,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
         child: Form(
           key: _formKey,
           child: Column(
@@ -91,24 +140,32 @@ class _AddEventSheetState extends State<AddEventSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Add Event',
-                    style: Theme.of(context).textTheme.titleLarge,
+                  const Text(
+                    'New Event',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF202124),
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, color: Color(0xFF5F6368)),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Event Title',
+                decoration: InputDecoration(
+                  labelText: 'Event title',
                   hintText: 'e.g., Barber shop',
-                  prefixIcon: Icon(Icons.event),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.event, color: Color(0xFF5F6368)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFFAFAFA),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -117,21 +174,54 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   return null;
                 },
                 textCapitalization: TextCapitalization.sentences,
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: _selectDate,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Date',
+                          prefixIcon: const Icon(Icons.calendar_today, color: Color(0xFF5F6368)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFFAFAFA),
+                        ),
+                        child: Text(
+                          DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               InkWell(
                 onTap: _selectTime,
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Time',
-                    prefixIcon: Icon(Icons.access_time),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.access_time, color: Color(0xFF5F6368)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFFAFAFA),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_selectedTime.format(context)),
-                      const Icon(Icons.arrow_drop_down),
+                      Text(
+                        _selectedTime.format(context),
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const Icon(Icons.arrow_drop_down, color: Color(0xFF5F6368)),
                     ],
                   ),
                 ),
@@ -139,20 +229,31 @@ class _AddEventSheetState extends State<AddEventSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Description (optional)',
                   hintText: 'Add notes...',
-                  prefixIcon: Icon(Icons.notes),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.notes, color: Color(0xFF5F6368)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFFAFAFA),
                 ),
                 maxLines: 2,
               ),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: _addEvent,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('Add Event'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A73E8),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Save',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ),
             ],

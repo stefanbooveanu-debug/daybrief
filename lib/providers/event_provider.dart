@@ -20,6 +20,15 @@ class EventProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  List<Event> getEventsForDay(DateTime day) {
+    return _events.where((event) {
+      return event.dateTime.year == day.year &&
+          event.dateTime.month == day.month &&
+          event.dateTime.day == day.day;
+    }).toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  }
+
   Future<void> addEvent(Event event) async {
     _isLoading = true;
     notifyListeners();

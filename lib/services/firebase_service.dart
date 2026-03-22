@@ -10,16 +10,30 @@ class FirebaseService {
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<User?> signUp(String email, String password) async {
+  Future<User?> signUp(String email, String password, String name, String surname) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      if (credential.user != null) {
+        await _saveUserProfile(credential.user!.uid, name, surname, email);
+      }
+      
       return credential.user;
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> _saveUserProfile(String uid, String name, String surname, String email) async {
+    await _firestore.collection('users').doc(uid).set({
+      'name': name,
+      'surname': surname,
+      'email': email,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<User?> signIn(String email, String password) async {

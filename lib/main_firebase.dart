@@ -32,7 +32,7 @@ class DayBriefApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6750A4),
+            seedColor: const Color(0xFF2196F3),
             brightness: Brightness.light,
           ),
           useMaterial3: true,
@@ -41,6 +41,14 @@ class DayBriefApp extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
         ),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF2196F3),
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        themeMode: ThemeMode.system,
         home: Consumer<AuthProvider>(
           builder: (context, auth, _) {
             if (auth.isAuthenticated) {
