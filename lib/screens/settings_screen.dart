@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'time_report_screen.dart';
+import 'share_calendar_screen.dart';
+import 'quick_poll_screen.dart';
+import 'family_calendar_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
@@ -22,6 +26,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _voiceAssistant = true;
   bool _soundEffects = true;
   bool _hapticFeedback = true;
+  bool _smartSnooze = true;
+  bool _conflictDetection = true;
+  bool _isDarkMode = false;
+  TimeOfDay _morningBriefing = const TimeOfDay(hour: 7, minute: 0);
   
   late Map<String, Color> _categoryColors;
 
@@ -29,11 +37,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _categoryColors = Map.from(widget.categoryColors);
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
   }
   
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = _isDarkMode;
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
@@ -62,8 +71,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Dark Mode',
                 'Save battery & easy on eyes',
                 Icons.dark_mode_outlined,
-                isDark,
+                _isDarkMode,
                 (value) {
+                  setState(() => _isDarkMode = value);
                   widget.onThemeChanged?.call(value);
                 },
                 isDark: isDark,
@@ -91,6 +101,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (value) => setState(() => _dailySummary = value),
                 isDark: isDark,
               ),
+              _buildSwitchTile(
+                'Smart Snooze',
+                'Snooze to next free slot',
+                Icons.snooze_outlined,
+                _smartSnooze,
+                (value) => setState(() => _smartSnooze = value),
+                isDark: isDark,
+              ),
+              _buildSwitchTile(
+                'Conflict Detection',
+                'Warn when events overlap',
+                Icons.warning_amber_outlined,
+                _conflictDetection,
+                (value) => setState(() => _conflictDetection = value),
+                isDark: isDark,
+              ),
+              _buildTimeTile('Morning Briefing', '${_morningBriefing.hour}:${_morningBriefing.minute.toString().padLeft(2, '0')}', Icons.alarm_outlined, isDark),
+            ],
+            isDark: isDark,
+          ),
+          const SizedBox(height: 24),
+          _buildSection(
+            'Analytics',
+            [
+              _buildNavTile('Time Report', 'Weekly time analysis', Icons.pie_chart_outline, () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const TimeReportScreen(events: [])));
+              }, isDark),
+              _buildSwitchTile(
+                'Smart Shortcuts',
+                'Learn your patterns',
+                Icons.auto_awesome_outlined,
+                true,
+                (value) {},
+                isDark: isDark,
+              ),
+            ],
+            isDark: isDark,
+          ),
+          const SizedBox(height: 24),
+          _buildSection(
+            'Collaboration',
+            [
+              _buildNavTile('Share Calendar', 'Let others view your schedule', Icons.share_outlined, () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: const [])));
+              }, isDark),
+              _buildNavTile('Quick Poll', 'Find the best meeting time', Icons.how_to_vote_outlined, () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const QuickPollScreen()));
+              }, isDark),
+              _buildNavTile('Family Calendar', 'Shared family events', Icons.family_restroom_outlined, () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => FamilyCalendarScreen(onAddEvent: (e) {})));
+              }, isDark),
             ],
             isDark: isDark,
           ),
@@ -220,6 +285,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildNavTile(String title, String subtitle, IconData icon, VoidCallback onTap, bool isDark) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), size: 22),
+      ),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+      trailing: Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+    );
+  }
+
   Widget _buildSwitchTile(
     String title,
     String subtitle,
@@ -272,6 +354,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
         value,
         style: TextStyle(
           color: isDark ? Colors.grey[400] : Colors.grey[600],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeTile(String title, String value, IconData icon, bool isDark) {
+    return ListTile(
+      onTap: () async {
+        final time = await showTimePicker(
+          context: context,
+          initialTime: _morningBriefing,
+        );
+        if (time != null) {
+          setState(() => _morningBriefing = time);
+        }
+      },
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), size: 22),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white : const Color(0xFF202124),
+        ),
+      ),
+      trailing: Text(
+        value,
+        style: TextStyle(
+          color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

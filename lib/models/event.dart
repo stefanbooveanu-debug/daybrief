@@ -5,6 +5,7 @@ class Event {
   final String? description;
   final String? category;
   final bool reminderEnabled;
+  final bool isCompleted;
   final String userId;
 
   Event({
@@ -14,6 +15,7 @@ class Event {
     this.description,
     this.category,
     this.reminderEnabled = true,
+    this.isCompleted = false,
     required this.userId,
   });
 
@@ -27,6 +29,7 @@ class Event {
       'description': description,
       'category': category,
       'reminderEnabled': reminderEnabled,
+      'isCompleted': isCompleted,
       'userId': userId,
     };
   }
@@ -39,6 +42,7 @@ class Event {
       description: map['description'],
       category: map['category'],
       reminderEnabled: map['reminderEnabled'] ?? true,
+      isCompleted: map['isCompleted'] ?? false,
       userId: map['userId'] ?? '',
     );
   }
@@ -50,6 +54,7 @@ class Event {
     String? description,
     String? category,
     bool? reminderEnabled,
+    bool? isCompleted,
     String? userId,
   }) {
     return Event(
@@ -59,6 +64,7 @@ class Event {
       description: description ?? this.description,
       category: category ?? this.category,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      isCompleted: isCompleted ?? this.isCompleted,
       userId: userId ?? this.userId,
     );
   }

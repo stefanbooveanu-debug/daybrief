@@ -143,15 +143,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         commandText.contains('my schedule')) {
       await _speakSchedule();
     } 
-    else if (commandText.contains('add event') || commandText.contains('new event') || commandText.contains('schedule something')) {
-      _showAddEventSheet();
-      await _speak('Opening add event');
+    else if (commandText.contains('add event') || commandText.contains('new event') || commandText.contains('schedule something') || commandText.contains('schedule') || commandText.contains('book')) {
+      final created = await _handleNaturalCreateEvent(commandText);
+      if (!created) {
+        _showAddEventSheet();
+        await _speak('Opening add event');
+      }
+    }
+    else if (commandText.contains('move') || commandText.contains('change') || commandText.contains('reschedule') || commandText.contains('shift')) {
+      await _handleMoveEvent(commandText);
+    }
+    else if (commandText.contains('delete') || commandText.contains('cancel') || commandText.contains('remove')) {
+      await _handleDeleteByVoice(commandText);
+    }
+    else if (commandText.contains('insight') || commandText.contains('focus') || commandText.contains('recommend') || commandText.contains('suggest')) {
+      await _giveInsights();
     }
     else if (commandText.contains('hello') || commandText.contains('hi') || commandText.contains('hey')) {
       await _speak('Hey there! How can I help you with your calendar today?');
     }
     else if (commandText.contains('help') || commandText.contains('what can you do')) {
-      await _speak('I can help you with your calendar. Try saying: what day is it, what time is it, what do I have today, or add event.');
+      await _speak('I can help you. Try saying: what do I have today, schedule lunch tomorrow at 1pm, move my 3pm to 5pm, or what should I focus on?');
     }
     else if (commandText.contains('thank you') || commandText.contains('thanks')) {
       await _speak("You're welcome!");
@@ -216,6 +228,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _addEvent(Event event) {
+    final conflicts = _events.where((e) =>
+      e.dateTime.year == event.dateTime.year &&
+      e.dateTime.month == event.dateTime.month &&
+      e.dateTime.day == event.dateTime.day &&
+      (e.dateTime.hour == event.dateTime.hour || 
+       (e.dateTime.hour - event.dateTime.hour).abs() < 1)
+    ).toList();
+    
+    if (conflicts.isNotEmpty) {
+      _showMessage('Warning: Overlaps with "${conflicts.first.title}" at ${DateFormat('h:mm a').format(conflicts.first.dateTime)}');
+    }
+    
     setState(() {
       _events.add(event);
       _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
@@ -226,6 +250,247 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     setState(() {
       _events.removeWhere((e) => e.id == eventId);
     });
+  }
+
+  void _completeEvent(String eventId) {
+    setState(() {
+      final index = _events.indexWhere((e) => e.id == eventId);
+      if (index != -1) {
+        _events[index] = _events[index].copyWith(isCompleted: !_events[index].isCompleted);
+      }
+    });
+  }
+
+  Future<void> _handleMoveEvent(String command) async {
+    final fromTime = _parseTime(command, ['from', 'at', 'my']);
+    final toTime = _parseTime(command, ['to']);
+    
+    if (fromTime == null && toTime == null) {
+      await _speak("I didn't catch the times. Try saying: move my 3pm to 5pm");
+      return;
+    }
+    
+    Event? targetEvent;
+    
+    if (fromTime != null) {
+      targetEvent = _events.firstWhere(
+        (e) => e.dateTime.hour == fromTime.hour && e.dateTime.day == _selectedDate.day,
+        orElse: () => Event(id: '', title: '', dateTime: DateTime.now(), userId: ''),
+      );
+    } else {
+      for (final e in _events) {
+        if (command.contains(e.title.toLowerCase())) {
+          targetEvent = e;
+          break;
+        }
+      }
+    }
+    
+    if (targetEvent == null || targetEvent.id.isEmpty) {
+      await _speak("I couldn't find that event. Can you be more specific?");
+      return;
+    }
+    
+    if (toTime != null) {
+      final newDateTime = DateTime(
+        targetEvent.dateTime.year,
+        targetEvent.dateTime.month,
+        targetEvent.dateTime.day,
+        toTime.hour,
+        toTime.minute,
+      );
+      
+      setState(() {
+        final index = _events.indexWhere((e) => e.id == targetEvent!.id);
+        if (index != -1) {
+          _events[index] = targetEvent!.copyWith(dateTime: newDateTime);
+        }
+      });
+      
+      await _speak("Done! Moved ${targetEvent.title} to ${DateFormat('h:mm a').format(newDateTime)}");
+    } else {
+      await _speak("Which time do you want to move it to?");
+    }
+  }
+  
+  TimeOfDay? _parseTime(String text, List<String> markers) {
+    final hourPattern = RegExp(r'(\d{1,2})\s*(am|pm)', caseSensitive: false);
+    
+    for (final marker in markers) {
+      final idx = text.indexOf(marker);
+      if (idx != -1) {
+        final substr = text.substring(idx);
+        final match = hourPattern.firstMatch(substr);
+        if (match != null) {
+          var hour = int.parse(match.group(1)!);
+          final period = match.group(2)!.toLowerCase();
+          if (period == 'pm' && hour != 12) hour += 12;
+          if (period == 'am' && hour == 12) hour = 0;
+          return TimeOfDay(hour: hour, minute: 0);
+        }
+      }
+    }
+    return null;
+  }
+  
+  Future<void> _handleDeleteByVoice(String command) async {
+    String? eventName;
+    
+    for (final e in _events) {
+      if (command.contains(e.title.toLowerCase())) {
+        eventName = e.title;
+        break;
+      }
+    }
+    
+    if (eventName == null) {
+      await _speak("Which event do you want to delete?");
+      return;
+    }
+    
+    setState(() {
+      _events.removeWhere((e) => e.title.toLowerCase() == eventName!.toLowerCase());
+    });
+    
+    await _speak("Deleted $eventName");
+  }
+
+  Future<void> _giveInsights() async {
+    final now = DateTime.now();
+    final weekEvents = _events.where((e) => 
+      e.dateTime.isAfter(now.subtract(Duration(days: now.weekday))) && 
+      e.dateTime.isBefore(now.add(Duration(days: 7)))
+    ).toList();
+    
+    if (weekEvents.isEmpty) {
+      await _speak("You have no events this week. Enjoy your free time!");
+      return;
+    }
+    
+    final categoryCount = <String, int>{};
+    for (final e in weekEvents) {
+      final cat = e.category ?? 'Other';
+      categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
+    }
+    
+    final sorted = categoryCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final topCat = sorted.isNotEmpty ? sorted.first.key : 'work';
+    
+    final workEvents = weekEvents.where((e) => e.category == 'Work' || e.category == 'Personal').length;
+    final healthEvents = weekEvents.where((e) => e.category == 'Health').length;
+    
+    String insight = "Here's your week at a glance. You have ${weekEvents.length} events, mostly $topCat. ";
+    
+    if (healthEvents == 0 && workEvents > 3) {
+      insight += "Consider adding some exercise time - you have no health activities scheduled.";
+    } else if (workEvents > 10) {
+      insight += "That's a busy week! Make sure to take breaks between meetings.";
+    } else {
+      insight += "You've got a good balance. Keep it up!";
+    }
+    
+    await _speak(insight);
+  }
+
+  Future<bool> _handleNaturalCreateEvent(String command) async {
+    final timePattern = RegExp(r'(\d{1,2})\s*(am|pm|oclock)?', caseSensitive: false);
+    final timeMatch = timePattern.firstMatch(command);
+    
+    final dayPattern = RegExp(r'(today|tomorrow|next\s+\w+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)', caseSensitive: false);
+    final dayMatch = dayPattern.firstMatch(command);
+    
+    final words = command.split(' ');
+    final stopWords = {'schedule', 'at', 'with', 'for', 'on', 'the', 'a', 'an', 'tomorrow', 'today', 'pm', 'am', 'oclock', 'o'};
+    final titleWords = words.where((w) => !stopWords.contains(w.toLowerCase()) && !RegExp(r'\d').hasMatch(w) && !dayPattern.hasMatch(w)).toList();
+    
+    if (titleWords.isEmpty) return false;
+    
+    final title = titleWords.take(6).join(' ').replaceAll(RegExp(r'(schedule|book|event|meeting|call)'), '').trim();
+    if (title.isEmpty) return false;
+    
+    TimeOfDay? time;
+    if (timeMatch != null) {
+      var hour = int.parse(timeMatch.group(1)!);
+      final isPM = command.contains('pm');
+      final isAM = command.contains('am');
+      if (isPM && hour != 12) hour += 12;
+      if (isAM && hour == 12) hour = 0;
+      time = TimeOfDay(hour: hour, minute: 0);
+    }
+    
+    DateTime eventDate = DateTime.now();
+    if (dayMatch != null) {
+      final dayStr = dayMatch.group(1)!.toLowerCase();
+      if (dayStr == 'today') {
+        eventDate = DateTime.now();
+      } else if (dayStr == 'tomorrow') {
+        eventDate = DateTime.now().add(const Duration(days: 1));
+      } else if (dayStr == 'monday' || dayStr == 'tuesday' || dayStr == 'wednesday' || dayStr == 'thursday' || dayStr == 'friday' || dayStr == 'saturday' || dayStr == 'sunday') {
+        final weekdays = {'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7};
+        final targetDay = weekdays[dayStr]!;
+        final now = DateTime.now();
+        var daysUntil = targetDay - now.weekday;
+        if (daysUntil <= 0) daysUntil += 7;
+        eventDate = now.add(Duration(days: daysUntil));
+      }
+    }
+    
+    if (time == null) {
+      time = const TimeOfDay(hour: 9, minute: 0);
+    }
+    
+    final event = Event(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      dateTime: DateTime(eventDate.year, eventDate.month, eventDate.day, time.hour, time.minute),
+      category: _inferCategory(title),
+      reminderEnabled: true,
+      userId: 'demo',
+    );
+    
+    _addEvent(event);
+    await _speak("Created ${event.title} for ${DateFormat('EEEE').format(eventDate)} at ${DateFormat('h:mm a').format(event.dateTime)}");
+    return true;
+  }
+  
+  String _inferCategory(String title) {
+    final lower = title.toLowerCase();
+    if (lower.contains('meeting') || lower.contains('work') || lower.contains('call') || lower.contains('standup')) return 'Work';
+    if (lower.contains('gym') || lower.contains('workout') || lower.contains('run') || lower.contains('doctor')) return 'Health';
+    if (lower.contains('lunch') || lower.contains('dinner') || lower.contains('coffee') || lower.contains('date')) return 'Personal';
+    if (lower.contains('birthday') || lower.contains('party') || lower.contains('hangout')) return 'Social';
+    if (lower.contains('shop') || lower.contains('buy') || lower.contains('grocery')) return 'Shopping';
+    return 'Other';
+  }
+
+  void _duplicateEvent(Event event) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: event.dateTime.add(const Duration(days: 1)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(event.dateTime),
+      );
+      
+      if (pickedTime != null) {
+        final newEvent = Event(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: event.title,
+          dateTime: DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute),
+          description: event.description,
+          category: event.category,
+          reminderEnabled: event.reminderEnabled,
+          userId: event.userId,
+        );
+        _addEvent(newEvent);
+        _showMessage('Event duplicated to ${DateFormat('MMM d').format(pickedDate)}');
+      }
+    }
   }
 
   void _showAddEventSheet() {
@@ -291,23 +556,51 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   int _getUpcomingCount() => _events.where((e) => e.dateTime.isAfter(DateTime.now()) && e.dateTime.isBefore(DateTime.now().add(const Duration(hours: 24)))).length;
 
+  List<Color> _getMotionColors() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 8) {
+      return [const Color(0xFFFF9A8B), const Color(0xFFFF6A88), const Color(0xFFFF99AC)]; // Sunrise
+    } else if (hour >= 8 && hour < 12) {
+      return [const Color(0xFF667EEA), const Color(0xFF764BA2)]; // Morning
+    } else if (hour >= 12 && hour < 17) {
+      return [const Color(0xFF11998E), const Color(0xFF38EF7D)]; // Afternoon
+    } else if (hour >= 17 && hour < 20) {
+      return [const Color(0xFFFDA085), const Color(0xFFF6D365)]; // Sunset
+    } else if (hour >= 20 || hour < 5) {
+      return [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)]; // Night
+    }
+    return [const Color(0xFF667EEA), const Color(0xFF764BA2)];
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isToday = _isSameDay(_selectedDate, DateTime.now());
     final dayEvents = _getFilteredEvents();
     final upcomingCount = _getUpcomingCount();
+    final motionColors = _getMotionColors();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(isToday, isDark),
-            _buildQuickStats(upcomingCount, isDark),
-            _buildMiniCalendarStrip(isDark),
-            Expanded(child: _buildEventsList(dayEvents, isDark)),
-          ],
+      backgroundColor: isDark ? const Color(0xFF121212) : null,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark 
+                ? [const Color(0xFF121212), const Color(0xFF1E1E1E)]
+                : motionColors,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(isToday, isDark),
+              _buildQuickStats(upcomingCount, isDark),
+              _buildMiniCalendarStrip(isDark),
+              Expanded(child: _buildEventsList(dayEvents, isDark)),
+            ],
+          ),
         ),
       ),
       floatingActionButton: Row(
@@ -578,7 +871,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           duration: Duration(milliseconds: 300 + (index * 50)),
           curve: Curves.easeOutCubic,
           builder: (context, value, child) => Transform.translate(offset: Offset(50 * (1 - value), 0), child: Opacity(opacity: value, child: child)),
-          child: Padding(padding: const EdgeInsets.only(bottom: 12), child: EventCard(event: event, onDelete: () => _deleteEvent(event.id), isDark: isDark, categoryColors: widget.categoryColors)),
+          child: Padding(padding: const EdgeInsets.only(bottom: 12), child: EventCard(event: event, onDelete: () => _deleteEvent(event.id), onDuplicate: () => _duplicateEvent(event), onComplete: () => _completeEvent(event.id), isDark: isDark, categoryColors: widget.categoryColors)),
         );
       },
     );

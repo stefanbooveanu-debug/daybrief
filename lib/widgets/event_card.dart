@@ -5,6 +5,8 @@ import '../models/event.dart';
 class EventCard extends StatelessWidget {
   final Event event;
   final VoidCallback onDelete;
+  final VoidCallback? onDuplicate;
+  final VoidCallback? onComplete;
   final bool isDark;
   final Map<String, Color> categoryColors;
 
@@ -12,6 +14,8 @@ class EventCard extends StatelessWidget {
     super.key,
     required this.event,
     required this.onDelete,
+    this.onDuplicate,
+    this.onComplete,
     this.isDark = false,
     this.categoryColors = const {
       'Work': Color(0xFF1A73E8),
@@ -178,7 +182,10 @@ class EventCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : const Color(0xFF202124),
+                                color: event.isCompleted 
+                                    ? (isDark ? Colors.grey[500] : Colors.grey[400])
+                                    : (isDark ? Colors.white : const Color(0xFF202124)),
+                                decoration: event.isCompleted ? TextDecoration.lineThrough : null,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -383,14 +390,37 @@ class EventCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      if (onDuplicate != null) onDuplicate!();
+                    },
+                    icon: Icon(Icons.copy, color: _getEventColor()),
+                    label: Text('Duplicate', style: TextStyle(color: _getEventColor())),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: _getEventColor()),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.check),
-                    label: const Text('Done'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      if (onComplete != null) onComplete!();
+                    },
+                    icon: Icon(event.isCompleted ? Icons.replay : Icons.check),
+                    label: Text(event.isCompleted ? 'Undo' : 'Done'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+                      backgroundColor: event.isCompleted 
+                          ? (isDark ? const Color(0xFF81C995) : const Color(0xFF34A853))
+                          : (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
