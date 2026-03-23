@@ -546,7 +546,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _goToToday() => setState(() => _selectedDate = DateTime.now());
   void _goToPreviousDay() => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1)));
   void _goToNextDay() => setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1)));
 
@@ -748,7 +747,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               itemBuilder: (context, index) {
                 final date = today.add(Duration(days: index));
                 final isSelected = _isSameDay(date, _selectedDate);
-                final isToday = _isSameDay(date, today);
                 
                 return GestureDetector(
                   onTap: () => setState(() => _selectedDate = date),

@@ -7,7 +7,7 @@ class VoiceProvider with ChangeNotifier {
   bool _isSpeaking = false;
   bool _isInitialized = false;
   String _lastResult = '';
-  String _wakeWord = 'hey daybrief';
+  final String _wakeWord = 'hey daybrief';
   String? _error;
 
   bool get isListening => _isListening;
