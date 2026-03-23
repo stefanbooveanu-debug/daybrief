@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
-import '../widgets/event_card.dart';
 
 class SearchScreen extends StatefulWidget {
   final List<Event> events;
