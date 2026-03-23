@@ -17,27 +17,34 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    await Future.delayed(const Duration(seconds: 1));
-    
-    if (email.isEmpty || !email.contains('@')) {
-      _error = 'Please enter a valid email';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-    
-    if (password.length < 6) {
-      _error = 'Password must be at least 6 characters';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
+    try {
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (email.isEmpty || !email.contains('@')) {
+        _error = 'Please enter a valid email';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      
+      if (password.length < 6) {
+        _error = 'Password must be at least 6 characters';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
 
-    _userEmail = email;
-    _isAuthenticated = true;
-    _isLoading = false;
-    notifyListeners();
-    return true;
+      _userEmail = email;
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'An error occurred. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> signIn(String email, String password) async {
@@ -45,30 +52,56 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    await Future.delayed(const Duration(seconds: 1));
-    
-    if (email.isEmpty || password.isEmpty) {
-      _error = 'Please enter email and password';
+    try {
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (email.isEmpty || password.isEmpty) {
+        _error = 'Please enter email and password';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      _userEmail = email;
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'An error occurred. Please try again.';
       _isLoading = false;
       notifyListeners();
       return false;
     }
-
-    _userEmail = email;
-    _isAuthenticated = true;
-    _isLoading = false;
-    notifyListeners();
-    return true;
   }
 
   Future<void> signOut() async {
-    _isAuthenticated = false;
-    _userEmail = null;
-    notifyListeners();
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      _isAuthenticated = false;
+      _userEmail = null;
+      _isLoading = false;
+      _error = null;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Error signing out';
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _error = null;
+    super.dispose();
   }
 }
