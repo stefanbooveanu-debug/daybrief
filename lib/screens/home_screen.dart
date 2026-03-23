@@ -97,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _startListening() async {
     if (!_speechEnabled) {
-      _showMessage('Speech not available. Please ensure Google app is installed.');
+      _showMessage('Speech not available');
       return;
     }
     
