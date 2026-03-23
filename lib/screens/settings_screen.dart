@@ -37,12 +37,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _categoryColors = Map.from(widget.categoryColors);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _isDarkMode = Theme.of(context).brightness == Brightness.dark;
   }
   
   @override
   Widget build(BuildContext context) {
-    final isDark = _isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),

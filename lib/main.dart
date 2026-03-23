@@ -101,9 +101,9 @@ class _DayBriefAppState extends State<DayBriefApp> {
             themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
             theme: _buildTheme(false),
             darkTheme: _buildTheme(true),
-            home: Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                if (auth.isAuthenticated) {
+            home: Builder(
+              builder: (ctx) => Consumer<AuthProvider>(
+                builder: (context, auth, _) {
                   return HomeScreen(
                     categoryColors: _categoryColors,
                     onCategoryColorsChanged: (colors) {
@@ -115,9 +115,8 @@ class _DayBriefAppState extends State<DayBriefApp> {
                       _saveDarkMode(isDark);
                     },
                   );
-                }
-                return const AuthScreen();
-              },
+                },
+              ),
             ),
           );
         },
