@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _speechEnabled = false;
   bool _isListening = false;
   bool _isSpeaking = false;
+  bool get isSpeaking => _isSpeaking;
 
   @override
   void initState() {
@@ -59,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _initSpeech() async {
     _speechEnabled = await _speech.initialize(
-      onError: (e) => print('Speech error: $e'),
-      onStatus: (e) => print('Speech status: $e'),
+      onError: (e) => debugPrint('Speech error: $e'),
+      onStatus: (e) => debugPrint('Speech status: $e'),
     );
     
     await _tts.setLanguage('en-US');
@@ -130,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final now = DateTime.now();
       final dayName = DateFormat('EEEE').format(now);
       final monthName = DateFormat('MMMM').format(now);
-      await _speak("Today is $dayName, ${monthName} ${now.day}, ${now.year}");
+      await _speak("Today is $dayName, $monthName ${now.day}, ${now.year}");
     }
     else if (commandText.contains('what time is it') || commandText.contains("what's the time") || commandText.contains('tell me the time')) {
       final now = DateTime.now();
@@ -359,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final now = DateTime.now();
     final weekEvents = _events.where((e) => 
       e.dateTime.isAfter(now.subtract(Duration(days: now.weekday))) && 
-      e.dateTime.isBefore(now.add(Duration(days: 7)))
+      e.dateTime.isBefore(now.add(const Duration(days: 7)))
     ).toList();
     
     if (weekEvents.isEmpty) {
@@ -435,9 +436,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       }
     }
     
-    if (time == null) {
-      time = const TimeOfDay(hour: 9, minute: 0);
-    }
+    time ??= const TimeOfDay(hour: 9, minute: 0);
     
     final event = Event(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -472,12 +471,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
     
     if (pickedDate != null) {
+      final context = this.context;
       final pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(event.dateTime),
       );
       
-      if (pickedTime != null) {
+      if (pickedTime != null && mounted) {
         final newEvent = Event(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: event.title,
