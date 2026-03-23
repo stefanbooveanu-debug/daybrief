@@ -5,7 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
 import '../widgets/add_event_sheet_demo.dart';
-import '../widgets/event_card.dart';
+import '../widgets/events_list_widget.dart';
 import 'week_view_screen_demo.dart';
 import 'settings_screen.dart';
 import 'month_view_screen.dart';
@@ -804,76 +804,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildEventsList(List<Event> dayEvents, bool isDark) {
-    if (dayEvents.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.elasticOut,
-              builder: (context, value, child) => Transform.scale(scale: value, child: child),
-              child: Container(
-                width: 120, height: 120,
-                decoration: BoxDecoration(
-                  color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(60),
-                ),
-                child: Icon(Icons.event_available_rounded, size: 60, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('No events scheduled', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
-            const SizedBox(height: 8),
-            Text('Tap the button below to add one', style: TextStyle(fontSize: 15, color: isDark ? Colors.grey[400] : Colors.grey[600])),
-            const SizedBox(height: 140),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 180),
-      itemCount: dayEvents.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), borderRadius: BorderRadius.circular(20)),
-                  child: Text('${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
-                    style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _navigateToWeekView,
-                  icon: Icon(Icons.calendar_view_week, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
-                  label: Text('Week View', style: TextStyle(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))),
-                ),
-                TextButton.icon(
-                  onPressed: _navigateToMonthView,
-                  icon: Icon(Icons.calendar_month, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
-                  label: Text('Month', style: TextStyle(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))),
-                ),
-              ],
-            ),
-          );
-        }
-        
-        final event = dayEvents[index - 1];
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 300 + (index * 50)),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) => Transform.translate(offset: Offset(50 * (1 - value), 0), child: Opacity(opacity: value, child: child)),
-          child: Padding(padding: const EdgeInsets.only(bottom: 12), child: EventCard(event: event, onDelete: () => _deleteEvent(event.id), onDuplicate: () => _duplicateEvent(event), onComplete: () => _completeEvent(event.id), isDark: isDark, categoryColors: widget.categoryColors)),
-        );
-      },
+    return EventsListWidget(
+      events: dayEvents,
+      categoryColors: widget.categoryColors,
+      isDark: isDark,
+      onNavigateToWeekView: _navigateToWeekView,
+      onNavigateToMonthView: _navigateToMonthView,
+      onEventTap: (event) {},
+      onDelete: _deleteEvent,
+      onDuplicate: _duplicateEvent,
+      onComplete: _completeEvent,
     );
   }
 
