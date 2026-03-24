@@ -530,10 +530,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _navigateToSettings() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Navigator.of(context).push(_createRoute(SettingsScreen(
       categoryColors: widget.categoryColors,
       onThemeChanged: widget.onThemeChanged,
       onColorsChanged: widget.onCategoryColorsChanged,
+      isDarkMode: isDark,
     )));
   }
 

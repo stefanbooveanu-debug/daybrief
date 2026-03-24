@@ -8,12 +8,14 @@ class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
   final Function(Map<String, Color>)? onColorsChanged;
   final Map<String, Color> categoryColors;
+  final bool isDarkMode;
   
   const SettingsScreen({
     super.key,
     this.onThemeChanged,
     this.onColorsChanged,
     required this.categoryColors,
+    required this.isDarkMode,
   });
 
   @override
@@ -28,7 +30,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hapticFeedback = true;
   bool _smartSnooze = true;
   bool _conflictDetection = true;
-  bool _isDarkMode = false;
   TimeOfDay _morningBriefing = const TimeOfDay(hour: 7, minute: 0);
   
   late Map<String, Color> _categoryColors;
@@ -38,16 +39,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _categoryColors = Map.from(widget.categoryColors);
   }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
-  }
   
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = widget.isDarkMode;
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
@@ -76,9 +71,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Dark Mode',
                 'Save battery & easy on eyes',
                 Icons.dark_mode_outlined,
-                _isDarkMode,
+                isDark,
                 (value) {
-                  setState(() => _isDarkMode = value);
+                  setState(() {
+                    widget.onThemeChanged?.call(value);
+                  });
                   widget.onThemeChanged?.call(value);
                 },
                 isDark: isDark,
@@ -151,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             [
               _buildNavTile('Share Calendar', 'Let others view your schedule', Icons.share_outlined, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: const [])));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: [])));
               }, isDark),
               _buildNavTile('Quick Poll', 'Find the best meeting time', Icons.how_to_vote_outlined, () {
                 Navigator.pop(context);
