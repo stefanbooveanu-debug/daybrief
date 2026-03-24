@@ -12,25 +12,22 @@ class AppColors {
     'Other': Color(0xFF5F6368),
   };
 
-  static const Color primary = Color(0xFF1A73E8);
-  static const Color secondary = Color(0xFF34A853);
+  static const Color primary = Color(0xFFFFD6BA);      // portocaliu pal - cel mai inchis
+  static const Color secondary = Color(0xFFFFE8CD);    // piersica medie
   static const Color error = Color(0xFFEA4335);
-  static const Color background = Color(0xFFFAFAFA);
-  static const Color surface = Colors.white;
-  static const Color onPrimary = Colors.white;
-  static const Color onBackground = Color(0xFF202124);
-  static const Color onSurface = Color(0xFF202124);
-  static const Color textSecondary = Color(0xFF5F6368);
-  static const Color divider = Color(0xFFE8EAED);
-  
-  static const Color gradientStart = Color(0xFF667eea);
-  static const Color gradientEnd = Color(0xFF764ba2);
+  static const Color background = Color(0xFFFFF2EB);   // crem foarte pal
+  static const Color surface = Color(0xFFFFDCDC);      // roz pal - cel mai deschis
+  static const Color onPrimary = Color(0xFF5C3A1E);    // maro inchis pentru text pe primary
+  static const Color onBackground = Color(0xFF4A2C1A); // maro inchis pentru text
+  static const Color onSurface = Color(0xFF4A2C1A);
+  static const Color textSecondary = Color(0xFF9E6B4A);
+  static const Color divider = Color(0xFFFFD6BA);
 
-  static const Color cream = Color(0xFFF7F3EC);
-  static const Color sand = Color(0xFFE2D7C9);
-  static const Color tan = Color(0xFFBCA088);
-  static const Color brown = Color(0xFF8A6A55);
-  static const Color darkBrown = Color(0xFF4F3A31);
+  static const Color pink = Color(0xFFFFDCDC);         // roz pal (top)
+  static const Color cream = Color(0xFFFFF2EB);        // crem (al doilea)
+  static const Color peach = Color(0xFFFFE8CD);        // piersica (al treilea)
+  static const Color apricot = Color(0xFFFFD6BA);      // cais (bottom)
+  static const Color darkText = Color(0xFF4A2C1A);     // text inchis
 
   static Color getCategoryColor(String category) {
     return defaultCategoryColors[category] ?? defaultCategoryColors['Other']!;
@@ -62,55 +59,56 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.brown,
+        seedColor: AppColors.apricot,
         brightness: Brightness.light,
       ).copyWith(
-        primary: AppColors.brown,
-        primaryContainer: AppColors.sand,
-        secondary: AppColors.tan,
+        primary: AppColors.apricot,
+        primaryContainer: AppColors.peach,
+        secondary: AppColors.peach,
         secondaryContainer: AppColors.cream,
-        tertiary: Color(0xFFA68B6C),
-        tertiaryContainer: Color(0xFFEEE6DA),
+        tertiary: AppColors.pink,
+        tertiaryContainer: AppColors.pink,
         surface: AppColors.cream,
-        onSurface: AppColors.darkBrown,
-        outline: Color(0xFFD4C8B8),
+        onSurface: AppColors.darkText,
+        onPrimary: AppColors.darkText,
+        outline: AppColors.apricot,
       ),
       scaffoldBackgroundColor: AppColors.cream,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.cream,
-        foregroundColor: AppColors.darkBrown,
+        backgroundColor: AppColors.pink,
+        foregroundColor: AppColors.darkText,
         elevation: 0,
-        surfaceTintColor: AppColors.sand,
+        surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardTheme(
-        color: AppColors.cream,
+        color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.peach, width: 1),
         ),
-        surfaceTintColor: AppColors.sand,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.sand,
+        fillColor: AppColors.pink,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD4C8B8)),
+          borderSide: const BorderSide(color: AppColors.peach),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.brown, width: 2),
+          borderSide: const BorderSide(color: AppColors.apricot, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.brown,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.apricot,
+          foregroundColor: AppColors.darkText,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -119,8 +117,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.brown,
-          side: const BorderSide(color: Color(0xFFD4C8B8)),
+          foregroundColor: AppColors.darkText,
+          side: const BorderSide(color: AppColors.apricot),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -128,24 +126,24 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.sand,
-        selectedColor: AppColors.tan,
-        labelStyle: const TextStyle(fontSize: 14, color: AppColors.darkBrown),
+        backgroundColor: AppColors.peach,
+        selectedColor: AppColors.apricot,
+        labelStyle: const TextStyle(fontSize: 14, color: AppColors.darkText),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.brown,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.apricot,
+        foregroundColor: AppColors.darkText,
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
       dividerTheme: const DividerThemeData(
-        color: Color(0xFFD4C8B8),
+        color: AppColors.peach,
         thickness: 1,
       ),
     );

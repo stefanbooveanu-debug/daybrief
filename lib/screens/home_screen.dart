@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
+import '../theme/theme.dart';
 import '../widgets/add_event_sheet_demo.dart';
 import '../widgets/events_list_widget.dart';
 import 'week_view_screen_demo.dart';
@@ -556,19 +557,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int _getUpcomingCount() => _events.where((e) => e.dateTime.isAfter(DateTime.now()) && e.dateTime.isBefore(DateTime.now().add(const Duration(hours: 24)))).length;
 
   List<Color> _getMotionColors() {
-    final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 8) {
-      return [const Color(0xFFFF9A8B), const Color(0xFFFF6A88), const Color(0xFFFF99AC)]; // Sunrise
-    } else if (hour >= 8 && hour < 12) {
-      return [const Color(0xFF667EEA), const Color(0xFF764BA2)]; // Morning
-    } else if (hour >= 12 && hour < 17) {
-      return [const Color(0xFF11998E), const Color(0xFF38EF7D)]; // Afternoon
-    } else if (hour >= 17 && hour < 20) {
-      return [const Color(0xFFFDA085), const Color(0xFFF6D365)]; // Sunset
-    } else if (hour >= 20 || hour < 5) {
-      return [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)]; // Night
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isDark) {
+      final hour = DateTime.now().hour;
+      if (hour >= 20 || hour < 5) {
+        return [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)];
+      }
+      return [const Color(0xFF121212), const Color(0xFF1E1E1E)];
     }
-    return [const Color(0xFF667EEA), const Color(0xFF764BA2)];
+    return [AppColors.cream, AppColors.peach];
   }
 
   @override
