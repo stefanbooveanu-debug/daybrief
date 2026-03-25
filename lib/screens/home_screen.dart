@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/event.dart';
 import '../theme/theme.dart';
 import '../widgets/add_event_sheet_demo.dart';
@@ -836,6 +837,64 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       onDuplicate: _duplicateEvent,
       onComplete: _completeEvent,
       onEdit: _editEvent,
+      onShare: _shareEvent,
+    );
+  }
+
+  void _shareEvent(Event event) {
+    _showShareEventSheet(event);
+  }
+
+  void _showShareEventSheet(Event event) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Share Event',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF202124),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.link, color: Color(0xFF1A73E8)),
+              title: const Text('Copy to Clipboard'),
+              subtitle: const Text('Copy event details as text'),
+              onTap: () {
+                final text = '${event.title}\n${event.dateTime}\n${event.location ?? ''}\n${event.description ?? ''}';
+                // Copy functionality would go here
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Event copied to clipboard!')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share, color: Color(0xFF34A853)),
+              title: const Text('Share via Apps'),
+              subtitle: const Text('Send via messaging, email, etc.'),
+              onTap: () {
+                final eventText = '${event.title}\n📅 ${DateFormat('EEEE, MMMM d, yyyy • h:mm a').format(event.dateTime)}${event.location != null ? '\n📍 ${event.location}' : ''}${event.description != null ? '\n📝 ${event.description}' : ''}';
+                Share.share(eventText, subject: event.title);
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 

@@ -3,6 +3,7 @@ import 'time_report_screen.dart';
 import 'share_calendar_screen.dart';
 import 'quick_poll_screen.dart';
 import 'family_calendar_screen.dart';
+import 'calendar_sync_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
@@ -151,16 +152,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             'Collaboration',
             [
+              _buildNavTile('Calendar Sync', 'Import/Export & Google Calendar', Icons.sync, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CalendarSyncScreen(events: const [], onEventsImported: (e) {})));
+              }, isDark),
               _buildNavTile('Share Calendar', 'Let others view your schedule', Icons.share_outlined, () {
-                Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: [])));
               }, isDark),
               _buildNavTile('Quick Poll', 'Find the best meeting time', Icons.how_to_vote_outlined, () {
-                Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const QuickPollScreen()));
               }, isDark),
               _buildNavTile('Family Calendar', 'Shared family events', Icons.family_restroom_outlined, () {
-                Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => FamilyCalendarScreen(onAddEvent: (e) {})));
               }, isDark),
             ],

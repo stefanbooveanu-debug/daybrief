@@ -14,6 +14,7 @@ class EventsListWidget extends StatelessWidget {
   final Function(Event) onDuplicate;
   final Function(String) onComplete;
   final Function(Event)? onEdit;
+  final Function(Event)? onShare;
 
   const EventsListWidget({
     super.key,
@@ -27,6 +28,7 @@ class EventsListWidget extends StatelessWidget {
     required this.onDuplicate,
     required this.onComplete,
     this.onEdit,
+    this.onShare,
   });
 
   @override
@@ -64,6 +66,7 @@ class EventsListWidget extends StatelessWidget {
               onDuplicate: () => onDuplicate(event),
               onComplete: () => onComplete(event.id),
               onEdit: onEdit != null ? () => onEdit!(event) : null,
+              onShare: onShare != null ? (Event e) => onShare!(e) : null,
             ),
           ),
         );
@@ -163,6 +166,7 @@ class _EventCardWrapper extends StatelessWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onComplete;
   final VoidCallback? onEdit;
+  final void Function(Event)? onShare;
 
   const _EventCardWrapper({
     required this.event,
@@ -173,6 +177,7 @@ class _EventCardWrapper extends StatelessWidget {
     required this.onDuplicate,
     required this.onComplete,
     this.onEdit,
+    this.onShare,
   });
 
   static final DateFormat _timeFormat = DateFormat('h:mm a');
@@ -441,6 +446,11 @@ class _EventCardWrapper extends StatelessWidget {
                   switch (value) {
                     case 'complete': onComplete(); break;
                     case 'edit': if (onEdit != null) onEdit!(); break;
+                    case 'share': 
+                      if (onShare != null) {
+                        onShare!(event); 
+                      }
+                      break;
                     case 'duplicate': onDuplicate(); break;
                     case 'delete': onDelete(); break;
                   }
@@ -454,6 +464,17 @@ class _EventCardWrapper extends StatelessWidget {
                           Icon(Icons.edit, size: 20, color: Colors.orange),
                           const SizedBox(width: 8),
                           Text('Edit'),
+                        ],
+                      ),
+                    ),
+                  if (onShare != null)
+                    PopupMenuItem(
+                      value: 'share',
+                      child: Row(
+                        children: [
+                          Icon(Icons.share, size: 20, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text('Share'),
                         ],
                       ),
                     ),
