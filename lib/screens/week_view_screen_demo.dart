@@ -324,6 +324,8 @@ class _WeekViewScreenDemoState extends State<WeekViewScreenDemo> {
                       child: EventCard(
                         event: dayEvents[index],
                         onDelete: () => widget.onDeleteEvent(dayEvents[index].id),
+                        isDark: Theme.of(context).brightness == Brightness.dark,
+                        categoryColors: widget.categoryColors,
                       ),
                     );
                   },

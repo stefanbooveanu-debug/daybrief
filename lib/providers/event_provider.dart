@@ -65,7 +65,7 @@ class EventProvider with ChangeNotifier {
       if (match != null) {
         final title = match.group(1)?.trim() ?? '';
         int hour = int.parse(match.group(2)!);
-        int minute = match.groupCount >= 3 ? int.parse(match.group(3)!) : 0;
+        int minute = match.groupCount >= 3 && match.group(3) != null ? int.parse(match.group(3)!) : 0;
 
         final isPM = voiceText.toLowerCase().contains('pm');
         if (isPM && hour < 12) hour += 12;

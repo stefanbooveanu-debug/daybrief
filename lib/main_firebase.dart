@@ -52,7 +52,15 @@ class DayBriefApp extends StatelessWidget {
         home: Consumer<AuthProvider>(
           builder: (context, auth, _) {
             if (auth.isAuthenticated) {
-              return const HomeScreen();
+              return const HomeScreen(
+                categoryColors: {
+                  'Work': Color(0xFF1A73E8),
+                  'Personal': Color(0xFF34A853),
+                  'Health': Color(0xFFEA4335),
+                  'Social': Color(0xFF9334E6),
+                  'Shopping': Color(0xFFFBBC04),
+                },
+              );
             }
             return const AuthScreen();
           },

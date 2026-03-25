@@ -69,7 +69,7 @@ class FirebaseService {
   }
 
   Future<void> addEvent(Event event) async {
-    await _firestore.collection('events').add(event.toMap());
+    await _firestore.collection('events').doc(event.id).set(event.toMap());
   }
 
   Future<void> deleteEvent(String eventId) async {
@@ -77,12 +77,6 @@ class FirebaseService {
   }
 
   Future<void> updateEvent(Event event) async {
-    final events = await _firestore
-        .collection('events')
-        .where('id', isEqualTo: event.id)
-        .get();
-    if (events.docs.isNotEmpty) {
-      await events.docs.first.reference.update(event.toMap());
-    }
+    await _firestore.collection('events').doc(event.id).update(event.toMap());
   }
 }

@@ -203,7 +203,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                         itemCount: selectedDayEvents.length,
                         itemBuilder: (context, index) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: EventCard(event: selectedDayEvents[index], onDelete: () {}, isDark: isDark),
+                          child: EventCard(event: selectedDayEvents[index], onDelete: () {}, isDark: isDark, categoryColors: widget.categoryColors),
                         ),
                       ),
                     ),

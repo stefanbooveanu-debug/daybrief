@@ -54,7 +54,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (success && mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen(
-          categoryColors: const {
+          categoryColors: {
             'Work': Color(0xFF1A73E8),
             'Personal': Color(0xFF34A853),
             'Health': Color(0xFFEA4335),
