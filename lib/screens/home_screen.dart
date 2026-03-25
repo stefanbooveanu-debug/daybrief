@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
@@ -873,8 +874,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               title: const Text('Copy to Clipboard'),
               subtitle: const Text('Copy event details as text'),
               onTap: () {
-                final text = '${event.title}\n${event.dateTime}\n${event.location ?? ''}\n${event.description ?? ''}';
-                // Copy functionality would go here
+                final text = '${event.title}\n📅 ${DateFormat('EEEE, MMMM d, yyyy • h:mm a').format(event.dateTime)}${event.location != null ? '\n📍 ${event.location}' : ''}${event.description != null ? '\n📝 ${event.description}' : ''}';
+                Clipboard.setData(ClipboardData(text: text));
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Event copied to clipboard!')),
