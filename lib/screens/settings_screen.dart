@@ -31,20 +31,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _smartSnooze = true;
   bool _conflictDetection = true;
   TimeOfDay _morningBriefing = const TimeOfDay(hour: 7, minute: 0);
+  late bool _isDark;
   
   late Map<String, Color> _categoryColors;
 
   @override
   void initState() {
     super.initState();
+    _isDark = widget.isDarkMode;
     _categoryColors = Map.from(widget.categoryColors);
   }
   
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.isDarkMode;
-    
-    return Scaffold(
+    return Theme(
+      data: _isDark ? ThemeData.dark() : ThemeData.light(),
+      child: Builder(
+        builder: (ctx) {
+          final isDark = _isDark;
+          return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -71,14 +76,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Dark Mode',
                 'Save battery & easy on eyes',
                 Icons.dark_mode_outlined,
-                isDark,
+                _isDark,
                 (value) {
                   setState(() {
-                    widget.onThemeChanged?.call(value);
+                    _isDark = value;
                   });
                   widget.onThemeChanged?.call(value);
                 },
-                isDark: isDark,
+                isDark: _isDark,
               ),
             ],
             isDark: isDark,
@@ -250,6 +255,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+        },
       ),
     );
   }

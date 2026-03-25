@@ -263,6 +263,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
+  void _editEvent(Event event) {
+    _showEditEventSheet(event);
+  }
+
+  void _showEditEventSheet(Event event) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _EditEventSheet(
+        event: event,
+        categoryColors: widget.categoryColors,
+        onEventUpdated: (updatedEvent) {
+          setState(() {
+            final index = _events.indexWhere((e) => e.id == updatedEvent.id);
+            if (index != -1) {
+              _events[index] = updatedEvent;
+            }
+          });
+        },
+      ),
+    );
+  }
+
   Future<void> _handleMoveEvent(String command) async {
     final fromTime = _parseTime(command, ['from', 'at', 'my']);
     final toTime = _parseTime(command, ['to']);
@@ -778,9 +802,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildMiniNavBtn(Icons.chevron_left, _goToPreviousDay, isDark),
+                _buildMiniNavBtn(Icons.chevron_right, _goToPreviousDay, isDark),
                 const SizedBox(height: 4),
-                _buildMiniNavBtn(Icons.chevron_right, _goToNextDay, isDark),
+                _buildMiniNavBtn(Icons.chevron_left, _goToNextDay, isDark),
               ],
             ),
           ),
@@ -811,6 +835,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       onDelete: _deleteEvent,
       onDuplicate: _duplicateEvent,
       onComplete: _completeEvent,
+      onEdit: _editEvent,
     );
   }
 
@@ -857,5 +882,167 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
       ),
     );
+  }
+}
+
+class _EditEventSheet extends StatefulWidget {
+  final Event event;
+  final Map<String, Color> categoryColors;
+  final Function(Event) onEventUpdated;
+
+  const _EditEventSheet({
+    required this.event,
+    required this.categoryColors,
+    required this.onEventUpdated,
+  });
+
+  @override
+  State<_EditEventSheet> createState() => _EditEventSheetState();
+}
+
+class _EditEventSheetState extends State<_EditEventSheet> {
+  late TextEditingController _titleController;
+  late TextEditingController _locationController;
+  late TextEditingController _descriptionController;
+  late TimeOfDay _selectedTime;
+  late DateTime _selectedDate;
+  late String _selectedCategory;
+  late bool _reminderEnabled;
+  late RecurrenceType _recurrenceType;
+  late int _recurrenceEndAfter;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.event.title);
+    _locationController = TextEditingController(text: widget.event.location ?? '');
+    _descriptionController = TextEditingController(text: widget.event.description ?? '');
+    _selectedTime = TimeOfDay.fromDateTime(widget.event.dateTime);
+    _selectedDate = widget.event.dateTime;
+    _selectedCategory = widget.event.category ?? 'Other';
+    _reminderEnabled = widget.event.reminderEnabled;
+    _recurrenceType = widget.event.recurrenceType;
+    _recurrenceEndAfter = widget.event.recurrenceEndAfter ?? 7;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(child: Container(margin: const EdgeInsets.only(bottom: 16), width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)))),
+              Text('Edit Event', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
+              const SizedBox(height: 24),
+              TextField(controller: _titleController, decoration: InputDecoration(hintText: 'Event title', prefixIcon: const Icon(Icons.edit), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA)), textCapitalization: TextCapitalization.sentences),
+              const SizedBox(height: 16),
+              Row(children: [
+                Expanded(child: _buildFieldCard(Icons.calendar_today, DateFormat('EEE, MMM d').format(_selectedDate), _selectDate, isDark)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildFieldCard(Icons.access_time, _selectedTime.format(context), _selectTime, isDark)),
+              ]),
+              const SizedBox(height: 16),
+              Text('Category', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : const Color(0xFF5F6368))),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: ['Work', 'Personal', 'Health', 'Social', 'Shopping', 'Other'].map((cat) => ChoiceChip(
+                  label: Text(cat),
+                  selected: _selectedCategory == cat,
+                  onSelected: (s) => setState(() => _selectedCategory = cat),
+                  selectedColor: widget.categoryColors[cat]?.withOpacity(0.3),
+                )).toList(),
+              ),
+              const SizedBox(height: 16),
+              TextField(controller: _locationController, decoration: InputDecoration(hintText: 'Location', prefixIcon: const Icon(Icons.location_on_outlined), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA))),
+              const SizedBox(height: 16),
+              TextField(controller: _descriptionController, decoration: InputDecoration(hintText: 'Notes', prefixIcon: const Icon(Icons.notes), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA)), maxLines: 2),
+              const SizedBox(height: 16),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Reminder', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124))),
+                Switch(value: _reminderEnabled, onChanged: (v) => setState(() => _reminderEnabled = v)),
+              ]),
+              const SizedBox(height: 16),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Repeat', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124))),
+                DropdownButton<RecurrenceType>(
+                  value: _recurrenceType,
+                  underline: const SizedBox(),
+                  items: const [
+                    DropdownMenuItem(value: RecurrenceType.none, child: Text('None')),
+                    DropdownMenuItem(value: RecurrenceType.daily, child: Text('Daily')),
+                    DropdownMenuItem(value: RecurrenceType.weekly, child: Text('Weekly')),
+                    DropdownMenuItem(value: RecurrenceType.monthly, child: Text('Monthly')),
+                  ],
+                  onChanged: (v) => setState(() => _recurrenceType = v ?? RecurrenceType.none),
+                ),
+              ]),
+              const SizedBox(height: 24),
+              FilledButton(onPressed: _updateEvent, style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1A73E8), padding: const EdgeInsets.symmetric(vertical: 16)), child: const Text('Save Changes')),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFieldCard(IconData icon, String label, VoidCallback onTap, bool isDark) {
+    return Material(color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12),
+      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(12),
+        child: Container(padding: const EdgeInsets.all(16), child: Row(children: [
+          Icon(icon, color: const Color(0xFF1A73E8)),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
+        ]))));
+  }
+
+  Future<void> _selectTime() async {
+    final picked = await showTimePicker(context: context, initialTime: _selectedTime);
+    if (picked != null) setState(() => _selectedTime = picked);
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(context: context, initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)), lastDate: DateTime.now().add(const Duration(days: 365)));
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  void _updateEvent() {
+    if (_titleController.text.trim().isEmpty) return;
+    
+    final updatedEvent = widget.event.copyWith(
+      title: _titleController.text.trim(),
+      dateTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _selectedTime.hour, _selectedTime.minute),
+      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+      location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+      category: _selectedCategory,
+      reminderEnabled: _reminderEnabled,
+      recurrenceType: _recurrenceType,
+      recurrenceEndAfter: _recurrenceType != RecurrenceType.none ? _recurrenceEndAfter : null,
+    );
+    
+    widget.onEventUpdated(updatedEvent);
+    Navigator.pop(context);
   }
 }

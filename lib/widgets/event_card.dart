@@ -77,6 +77,21 @@ class EventCard extends StatelessWidget {
     return Icons.event_outlined;
   }
 
+  String _getRecurrenceText() {
+    switch (event.recurrenceType) {
+      case RecurrenceType.daily:
+        return 'Daily';
+      case RecurrenceType.weekly:
+        return 'Weekly';
+      case RecurrenceType.monthly:
+        return 'Monthly';
+      case RecurrenceType.yearly:
+        return 'Yearly';
+      case RecurrenceType.none:
+        return '';
+    }
+  }
+
   bool _isUpcoming() {
     final now = DateTime.now();
     final diff = event.dateTime.difference(now);
@@ -338,6 +353,18 @@ class EventCard extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          if (event.recurrenceType != RecurrenceType.none) ...[
+                            const SizedBox(width: 12),
+                            Icon(Icons.repeat, size: 14, color: _getEventColor()),
+                            const SizedBox(width: 2),
+                            Text(
+                              _getRecurrenceText(),
+                              style: TextStyle(
+                                color: _getEventColor(),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
@@ -361,6 +388,31 @@ class EventCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         event.description!,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF202124),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (event.location != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 20, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        event.location!,
                         style: TextStyle(
                           color: isDark ? Colors.white : const Color(0xFF202124),
                         ),

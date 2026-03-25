@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/event.dart';
 
 class EventsListWidget extends StatelessWidget {
@@ -12,6 +13,7 @@ class EventsListWidget extends StatelessWidget {
   final Function(String) onDelete;
   final Function(Event) onDuplicate;
   final Function(String) onComplete;
+  final Function(Event)? onEdit;
 
   const EventsListWidget({
     super.key,
@@ -24,6 +26,7 @@ class EventsListWidget extends StatelessWidget {
     required this.onDelete,
     required this.onDuplicate,
     required this.onComplete,
+    this.onEdit,
   });
 
   @override
@@ -50,7 +53,7 @@ class EventsListWidget extends StatelessWidget {
             offset: Offset(50 * (1 - value), 0),
             child: Opacity(opacity: value, child: child),
           ),
-          child: Padding(
+            child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _EventCardWrapper(
               event: event,
@@ -60,6 +63,7 @@ class EventsListWidget extends StatelessWidget {
               onDelete: () => onDelete(event.id),
               onDuplicate: () => onDuplicate(event),
               onComplete: () => onComplete(event.id),
+              onEdit: onEdit != null ? () => onEdit!(event) : null,
             ),
           ),
         );
@@ -158,6 +162,7 @@ class _EventCardWrapper extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
   final VoidCallback onComplete;
+  final VoidCallback? onEdit;
 
   const _EventCardWrapper({
     required this.event,
@@ -167,6 +172,7 @@ class _EventCardWrapper extends StatelessWidget {
     required this.onDelete,
     required this.onDuplicate,
     required this.onComplete,
+    this.onEdit,
   });
 
   static final DateFormat _timeFormat = DateFormat('h:mm a');
@@ -190,6 +196,87 @@ class _EventCardWrapper extends StatelessWidget {
     final now = DateTime.now();
     final diff = event.dateTime.difference(now);
     return diff.inMinutes > 0 && diff.inHours <= 1;
+  }
+
+  Future<void> _showLocationOptions(BuildContext context, String location) async {
+    final encodedLocation = Uri.encodeComponent(location);
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Open in',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF202124),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF34A853).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.map, color: Color(0xFF34A853)),
+              ),
+              title: Text(
+                'Google Maps',
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
+              ),
+              subtitle: Text(
+                'Navigate with Google Maps',
+                style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                final mapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encodedLocation');
+                if (await canLaunchUrl(mapsUrl)) {
+                  await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBBC04).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.directions, color: Color(0xFFFBBC04)),
+              ),
+              title: Text(
+                'Waze',
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
+              ),
+              subtitle: Text(
+                'Navigate with Waze',
+                style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                final wazeUrl = Uri.parse('https://waze.com/ul?q=$encodedLocation&navigate=yes');
+                if (await canLaunchUrl(wazeUrl)) {
+                  await launchUrl(wazeUrl, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -290,16 +377,61 @@ class _EventCardWrapper extends StatelessWidget {
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
-                        if (event.description != null && event.description!.isNotEmpty) ...[
+                        if (event.recurrenceType != RecurrenceType.none) ...[
                           const SizedBox(width: 12),
                           Icon(
-                            Icons.notes, 
+                            Icons.repeat, 
                             size: 14, 
-                            color: isDark ? Colors.grey[400] : Colors.grey[600]
+                            color: color
                           ),
                         ],
                       ],
                     ),
+                    if (event.location != null && event.location!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () => _showLocationOptions(context, event.location!),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_on, size: 16, color: color),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                event.location!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: color,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(Icons.open_in_new, size: 14, color: color),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (event.description != null && event.description!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(Icons.notes, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              event.description!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -308,11 +440,23 @@ class _EventCardWrapper extends StatelessWidget {
                 onSelected: (value) {
                   switch (value) {
                     case 'complete': onComplete(); break;
+                    case 'edit': if (onEdit != null) onEdit!(); break;
                     case 'duplicate': onDuplicate(); break;
                     case 'delete': onDelete(); break;
                   }
                 },
                 itemBuilder: (context) => [
+                  if (onEdit != null)
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 20, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Text('Edit'),
+                        ],
+                      ),
+                    ),
                   PopupMenuItem(
                     value: 'complete',
                     child: Row(
