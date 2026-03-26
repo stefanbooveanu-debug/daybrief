@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/auth_screen.dart';
 import 'theme/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const DayBriefApp());
 }
 
@@ -103,6 +107,9 @@ class _DayBriefAppState extends State<DayBriefApp> {
             darkTheme: AppTheme.darkTheme,
             home: Consumer<AuthProvider>(
               builder: (context, auth, _) {
+                if (!auth.isAuthenticated) {
+                  return const AuthScreen();
+                }
                 return HomeScreen(
                   categoryColors: _categoryColors,
                   onCategoryColorsChanged: (colors) {
