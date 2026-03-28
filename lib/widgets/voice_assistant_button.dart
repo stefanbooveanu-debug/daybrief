@@ -23,7 +23,7 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Curves.easeInOut,
@@ -51,9 +51,17 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
         },
         onWakeWordDetected: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Listening for your command...'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.mic, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('Listening for your command...'),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1A73E8),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
             ),
           );
         },
@@ -99,19 +107,20 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
         final isListening = voiceProvider.isListening;
         final isSpeaking = voiceProvider.isSpeaking;
 
-        return FloatingActionButton.extended(
-          onPressed: voiceProvider.isInitialized ? _toggleListening : null,
-          backgroundColor: isListening
-              ? Colors.red
-              : isSpeaking
-                  ? Colors.orange
-                  : Theme.of(context).colorScheme.primary,
-          icon: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: isListening ? _scaleAnimation.value : 1.0,
-                child: Icon(
+        return AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: isListening ? _scaleAnimation.value : 1.0,
+              child: FloatingActionButton.extended(
+                onPressed: voiceProvider.isInitialized ? _toggleListening : null,
+                backgroundColor: isListening
+                    ? Colors.red
+                    : isSpeaking
+                        ? Colors.orange
+                        : const Color(0xFF1A73E8),
+                elevation: 4,
+                icon: Icon(
                   isSpeaking
                       ? Icons.volume_up
                       : isListening
@@ -119,17 +128,17 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
                           : Icons.mic_none,
                   color: Colors.white,
                 ),
-              );
-            },
-          ),
-          label: Text(
-            isSpeaking
-                ? 'Speaking...'
-                : isListening
-                    ? 'Listening...'
-                    : 'Hey DayBrief',
-            style: const TextStyle(color: Colors.white),
-          ),
+                label: Text(
+                  isSpeaking
+                      ? 'Speaking...'
+                      : isListening
+                          ? 'Listening...'
+                          : 'Hey DayBrief',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                ),
+              ),
+            );
+          },
         );
       },
     );

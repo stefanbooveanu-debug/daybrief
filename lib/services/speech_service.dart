@@ -1,5 +1,6 @@
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/foundation.dart';
 
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
@@ -11,11 +12,25 @@ class SpeechService {
 
   Future<bool> initialize() async {
     if (_isInitialized) return true;
-    _isInitialized = await _speechToText.initialize(
-      onError: (error) => print('Speech error: $error'),
-      onStatus: (status) => print('Speech status: $status'),
-    );
-    return _isInitialized;
+    
+    try {
+      _isInitialized = await _speechToText.initialize(
+        onError: (error) => debugPrint('Speech error: $error'),
+        onStatus: (status) => debugPrint('Speech status: $status'),
+      );
+      
+      if (!kIsWeb) {
+        await _flutterTts.setLanguage('en-US');
+        await _flutterTts.setSpeechRate(0.5);
+        await _flutterTts.setVolume(1.0);
+        await _flutterTts.setPitch(1.0);
+      }
+      
+      return _isInitialized;
+    } catch (e) {
+      debugPrint('Speech init error: $e');
+      return false;
+    }
   }
 
   Future<void> startListening({
@@ -24,7 +39,11 @@ class SpeechService {
     Function()? onListeningStopped,
   }) async {
     if (!_isInitialized) {
-      await initialize();
+      final success = await initialize();
+      if (!success) {
+        debugPrint('Speech not available on this device');
+        return;
+      }
     }
 
     if (_isListening) return;
@@ -32,18 +51,26 @@ class SpeechService {
     _isListening = true;
     onListeningStarted?.call();
 
-    await _speechToText.listen(
-      onResult: (result) {
-        if (result.finalResult) {
-          onResult(result.recognizedWords);
-        }
-      },
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
-      partialResults: false,
-      cancelOnError: true,
-      listenMode: ListenMode.confirmation,
-    );
+    try {
+      await _speechToText.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            onResult(result.recognizedWords);
+          }
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 3),
+        listenOptions: SpeechListenOptions(
+          partialResults: false,
+          cancelOnError: true,
+          listenMode: ListenMode.confirmation,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Listen error: $e');
+      _isListening = false;
+      onListeningStopped?.call();
+    }
   }
 
   Future<void> stopListening() async {
@@ -53,9 +80,21 @@ class SpeechService {
   }
 
   Future<void> speak(String text) async {
-    await _flutterTts.setLanguage('en-US');
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.speak(text);
+    if (kIsWeb) {
+      await _speakWeb(text);
+    } else {
+      await _flutterTts.speak(text);
+    }
+  }
+
+  Future<void> _speakWeb(String text) async {
+    try {
+      await _flutterTts.setLanguage('en-US');
+      await _flutterTts.setSpeechRate(0.5);
+      await _flutterTts.speak(text);
+    } catch (e) {
+      debugPrint('Web TTS error: $e');
+    }
   }
 
   Future<void> stopSpeaking() async {
