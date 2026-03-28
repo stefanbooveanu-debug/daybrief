@@ -4,6 +4,7 @@ import 'share_calendar_screen.dart';
 import 'quick_poll_screen.dart';
 import 'family_calendar_screen.dart';
 import 'calendar_sync_screen.dart';
+import 'voice_templates_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
@@ -195,6 +196,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (value) => setState(() => _hapticFeedback = value),
                 isDark: isDark,
               ),
+              _buildNavTile('Voice Templates', 'Quick commands for common events', Icons.record_voice_over_outlined, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const VoiceTemplatesScreen()));
+              }, isDark),
             ],
             isDark: isDark,
           ),

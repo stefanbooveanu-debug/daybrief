@@ -370,6 +370,14 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 20),
               Center(
+                child: TextButton(
+                  onPressed: () {
+                    context.read<AuthProvider>().enableDemoMode();
+                  },
+                  child: const Text('Try Demo Mode', style: TextStyle(color: Color(0xFF1A73E8), fontWeight: FontWeight.w600)),
+                ),
+              ),
+              Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

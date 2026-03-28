@@ -15,12 +15,22 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   String? _userEmail;
   String? _userName;
+  bool _isDemoMode = false;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAuthenticated => _isAuthenticated;
-  String? get userId => _userEmail;
-  String? get userName => _userName;
+  bool get isAuthenticated => _isAuthenticated || _isDemoMode;
+  String? get userId => _userEmail ?? (_isDemoMode ? 'demo-user' : null);
+  String? get userName => _userName ?? (_isDemoMode ? 'Demo User' : null);
+  bool get isDemoMode => _isDemoMode;
+
+  void enableDemoMode() {
+    _isDemoMode = true;
+    _isAuthenticated = true;
+    _userEmail = 'demo@example.com';
+    _userName = 'Demo User';
+    notifyListeners();
+  }
 
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
