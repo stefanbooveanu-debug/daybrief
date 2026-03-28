@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_service.dart';
 
@@ -101,6 +102,7 @@ class AuthProvider with ChangeNotifier {
 
   String _getErrorMessage(dynamic e) {
     if (e is FirebaseAuthException) {
+      debugPrint('Firebase Auth Error: ${e.code} - ${e.message}');
       switch (e.code) {
         case 'user-not-found':
           return 'No account found with this email';
@@ -112,19 +114,21 @@ class AuthProvider with ChangeNotifier {
           return 'Please enter a valid email';
         case 'weak-password':
           return 'Password is too weak';
+        case 'INVALID_LOGIN_CREDENTIALS':
+        case 'invalid-credential':
+          return 'Invalid email or password';
         case 'ERROR_INVALID_EMAIL':
           return 'Invalid email address';
         case 'ERROR_WRONG_PASSWORD':
           return 'Incorrect password';
         case 'ERROR_USER_NOT_FOUND':
-          return 'No account with this email';
-        case 'ERROR_EMAIL_ALREADY_IN_USE':
-          return 'Email already registered';
+          return 'No account found';
         default:
           return 'Error: ${e.code}';
       }
     }
-    return 'Error: ${e.toString()}';
+    debugPrint('General Error: $e');
+    return 'Error: $e';
   }
 
   void clearError() {

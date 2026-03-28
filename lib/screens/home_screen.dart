@@ -5,7 +5,9 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
 import '../models/event.dart';
+import '../providers/event_provider.dart';
 import '../theme/theme.dart';
 import '../widgets/add_event_sheet_demo.dart';
 import '../widgets/events_list_widget.dart';
@@ -232,6 +234,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _addEvent(Event event) {
+    final eventProvider = context.read<EventProvider>();
+    
     final conflicts = _events.where((e) =>
       e.dateTime.year == event.dateTime.year &&
       e.dateTime.month == event.dateTime.month &&
@@ -244,6 +248,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _showMessage('Warning: Overlaps with "${conflicts.first.title}" at ${DateFormat('h:mm a').format(conflicts.first.dateTime)}');
     }
     
+    eventProvider.addEvent(event);
+    
     setState(() {
       _events.add(event);
       _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
@@ -251,18 +257,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _deleteEvent(String eventId) {
+    context.read<EventProvider>().deleteEvent(eventId);
     setState(() {
       _events.removeWhere((e) => e.id == eventId);
     });
   }
 
   void _completeEvent(String eventId) {
-    setState(() {
-      final index = _events.indexWhere((e) => e.id == eventId);
-      if (index != -1) {
-        _events[index] = _events[index].copyWith(isCompleted: !_events[index].isCompleted);
-      }
-    });
+    final eventProvider = context.read<EventProvider>();
+    final index = _events.indexWhere((e) => e.id == eventId);
+    if (index != -1) {
+      final updatedEvent = _events[index].copyWith(isCompleted: !_events[index].isCompleted);
+      eventProvider.addEvent(updatedEvent);
+      setState(() {
+        _events[index] = updatedEvent;
+      });
+    }
   }
 
   void _editEvent(Event event) {
@@ -278,6 +288,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         event: event,
         categoryColors: widget.categoryColors,
         onEventUpdated: (updatedEvent) {
+          context.read<EventProvider>().addEvent(updatedEvent);
           setState(() {
             final index = _events.indexWhere((e) => e.id == updatedEvent.id);
             if (index != -1) {

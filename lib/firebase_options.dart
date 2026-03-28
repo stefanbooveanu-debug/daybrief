@@ -29,8 +29,8 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAUKfJyOhCsKmM-NSRtyzIMaymMG0f1cnc',
-    appId: '1:1033860843007:web:617554cdf3217190b6d3ca',
+    apiKey: 'AIzaSyDx8RZuoRKm7M7BknhihSKxm7jVICC2_Mo',
+    appId: '1:1033860843007:web:f4d9bb3c7bd861d5b6d3ca',
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
     authDomain: 'daybrief-d6bf6.firebaseapp.com',
@@ -38,7 +38,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAUKfJyOhCsKmM-NSRtyzIMaymMG0f1cnc',
+    apiKey: 'AIzaSyDx8RZuoRKm7M7BknhihSKxm7jVICC2_Mo',
     appId: '1:1033860843007:android:617554cdf3217190b6d3ca',
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAUKfJyOhCsKmM-NSRtyzIMaymMG0f1cnc',
+    apiKey: 'AIzaSyDx8RZuoRKm7M7BknhihSKxm7jVICC2_Mo',
     appId: '1:1033860843007:ios:617554cdf3217190b6d3ca',
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAUKfJyOhCsKmM-NSRtyzIMaymMG0f1cnc',
+    apiKey: 'AIzaSyDx8RZuoRKm7M7BknhihSKxm7jVICC2_Mo',
     appId: '1:1033860843007:macos:617554cdf3217190b6d3ca',
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAUKfJyOhCsKmM-NSRtyzIMaymMG0f1cnc',
+    apiKey: 'AIzaSyDx8RZuoRKm7M7BknhihSKxm7jVICC2_Mo',
     appId: '1:1033860843007:windows:617554cdf3217190b6d3ca',
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
