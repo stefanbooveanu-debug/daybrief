@@ -71,9 +71,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
     
     await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.5);
+    await _tts.setSpeechRate(0.55);
     await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+    await _tts.setPitch(1.1);
+    
+    final voices = await _tts.getVoices;
+    if (voices != null && voices.isNotEmpty) {
+      for (var voice in voices) {
+        if (voice.toString().contains('en-US') && 
+            (voice.toString().contains('female') || voice.toString().contains('Feminine') || voice.toString().contains('en-US-Standard'))) {
+          await _tts.setVoice(voice);
+          break;
+        }
+      }
+    }
+    
+    if (!kIsWeb) {
+      await _tts.setSharedInstance(true);
+      await _tts.awaitSpeakCompletion(true);
+    }
     
     _tts.setStartHandler(() {
       setState(() => _isSpeaking = true);
@@ -84,10 +100,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
     
     if (mounted) setState(() {});
-  }
-
-  Future<void> _testTTS() async {
-    await _tts.speak("Hello! This is DayBrief speaking. How can I help you today?");
   }
 
   void _startListening() async {
@@ -735,7 +747,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           _buildCircleButton(Icons.chevron_left, _goToPreviousDay, isDark),
           _buildCircleButton(Icons.chevron_right, _goToNextDay, isDark),
           _buildCircleButton(Icons.search, _navigateToSearch, isDark),
-          _buildCircleButton(Icons.volume_up, _testTTS, isDark),
           _buildCircleButton(Icons.settings_outlined, _navigateToSettings, isDark),
         ],
       ),
