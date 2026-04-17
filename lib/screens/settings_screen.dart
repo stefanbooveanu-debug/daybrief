@@ -3,6 +3,7 @@ import 'time_report_screen.dart';
 import 'share_calendar_screen.dart';
 import 'quick_poll_screen.dart';
 import 'family_calendar_screen.dart';
+import 'driving_mode_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
@@ -160,6 +161,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildNavTile('Family Calendar', 'Shared family events', Icons.family_restroom_outlined, () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => FamilyCalendarScreen(onAddEvent: (e) {})));
+              }, isDark),
+              _buildNavTile('Driving Mode', 'Voice-only safe mode', Icons.directions_car_outlined, () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DrivingModeScreen(
+                  events: const [],
+                  categoryColors: _categoryColors,
+                )));
               }, isDark),
             ],
             isDark: isDark,
