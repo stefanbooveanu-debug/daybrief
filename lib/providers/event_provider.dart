@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import '../services/firebase_service.dart';
+import '../services/database_service.dart';
 import '../models/event.dart';
 
 class EventProvider with ChangeNotifier {
-  final FirebaseService _firebaseService = FirebaseService();
+  final DatabaseService _databaseService = DatabaseService();
   List<Event> _events = [];
   bool _isLoading = false;
   String? _error;
@@ -12,12 +12,27 @@ class EventProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Stream<List<Event>> get todayEventsStream =>
-      _firebaseService.getTodayEvents();
+  EventProvider() {
+    _loadEvents();
+  }
 
-  void updateEvents(List<Event> events) {
-    _events = events;
+  Future<void> _loadEvents() async {
+    _isLoading = true;
     notifyListeners();
+
+    try {
+      _events = await _databaseService.getAllEvents();
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> refreshEvents() async {
+    await _loadEvents();
   }
 
   List<Event> getEventsForDay(DateTime day) {
@@ -29,85 +44,86 @@ class EventProvider with ChangeNotifier {
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
+  List<Event> getUpcomingEvents() {
+    final now = DateTime.now();
+    return _events.where((e) => e.dateTime.isAfter(now)).toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  }
+
   Future<void> addEvent(Event event) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      await _firebaseService.addEvent(event);
-      _isLoading = false;
+      await _databaseService.insertEvent(event);
+      _events.add(event);
+      _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> updateEvent(Event event) async {
+    try {
+      await _databaseService.updateEvent(event);
+      final index = _events.indexWhere((e) => e.id == event.id);
+      if (index != -1) {
+        _events[index] = event;
+        _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      }
       notifyListeners();
     } catch (e) {
       _error = e.toString();
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> deleteEvent(String eventId) async {
     try {
-      await _firebaseService.deleteEvent(eventId);
+      await _databaseService.deleteEvent(eventId);
+      _events.removeWhere((e) => e.id == eventId);
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
     }
   }
 
-  Event? parseVoiceEvent(String voiceText, String userId) {
-    final patterns = [
-      RegExp(r'add\s+(.+?)\s+at\s+(\d{1,2})\s*(?:am|pm)?', caseSensitive: false),
-      RegExp(r'add\s+(.+?)\s+at\s+(\d{1,2}):(\d{2})\s*(?:am|pm)?', caseSensitive: false),
-      RegExp(r'schedule\s+(.+?)\s+at\s+(\d{1,2})\s*(?:am|pm)?', caseSensitive: false),
-    ];
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(voiceText);
-      if (match != null) {
-        final title = match.group(1)?.trim() ?? '';
-        int hour = int.parse(match.group(2)!);
-        int minute = match.groupCount >= 3 ? int.parse(match.group(3)!) : 0;
-
-        final isPM = voiceText.toLowerCase().contains('pm');
-        if (isPM && hour < 12) hour += 12;
-        if (!isPM && hour == 12) hour = 0;
-
-        final now = DateTime.now();
-        final eventDateTime = DateTime(now.year, now.month, now.day, hour, minute);
-
-        return Event(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: title,
-          dateTime: eventDateTime,
-          userId: userId,
-        );
-      }
+  Future<void> toggleEventCompletion(String eventId) async {
+    final index = _events.indexWhere((e) => e.id == eventId);
+    if (index != -1) {
+      final event = _events[index];
+      final updatedEvent = event.copyWith(isCompleted: !event.isCompleted);
+      await updateEvent(updatedEvent);
     }
-    return null;
   }
 
-  String formatEventsForSpeech(List<Event> events) {
-    if (events.isEmpty) {
-      return "You have nothing scheduled for today.";
-    }
-
-    final buffer = StringBuffer("Hi! You have ${events.length} ${events.length == 1 ? 'event' : 'events'} today. ");
-
-    for (int i = 0; i < events.length; i++) {
-      final event = events[i];
-      final timeStr = formatTime(event.dateTime);
-      buffer.write("${event.title} at $timeStr");
-      if (i < events.length - 1) {
-        buffer.write(", ");
-      }
-    }
-
-    return buffer.toString();
+  int getUpcomingCount({int hours = 24}) {
+    final now = DateTime.now();
+    final cutoff = now.add(Duration(hours: hours));
+    return _events.where((e) => 
+      e.dateTime.isAfter(now) && e.dateTime.isBefore(cutoff)
+    ).length;
   }
 
-  String formatTime(DateTime dateTime) {
-    final hour = dateTime.hour % 12 == 0 ? 12 : dateTime.hour % 12;
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+  Map<String, int> getCategoryStats({int days = 7}) {
+    final now = DateTime.now();
+    final startDate = now.subtract(Duration(days: now.weekday - 1));
+    final endDate = startDate.add(Duration(days: days));
+    
+    final weekEvents = _events.where((e) => 
+      e.dateTime.isAfter(startDate) && e.dateTime.isBefore(endDate)
+    ).toList();
+
+    final stats = <String, int>{};
+    for (final event in weekEvents) {
+      final category = event.category ?? 'Other';
+      stats[category] = (stats[category] ?? 0) + 1;
+    }
+    return stats;
   }
 }

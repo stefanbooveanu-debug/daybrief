@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/event_provider.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -77,8 +78,11 @@ class _DayBriefAppState extends State<DayBriefApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+      ],
       child: Builder(
         builder: (context) {
           if (_isLoading) {
