@@ -18,7 +18,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
     {'name': 'Sister', 'avatar': '👧', 'color': const Color(0xFF9C27B0)},
   ];
   
-  final List<Event> _familyEvents = [
+  List<Event> _familyEvents = [
     Event(id: '1', title: 'Family Dinner', dateTime: DateTime.now().add(const Duration(days: 2, hours: 19)), description: 'Grandma coming over', category: 'Personal', userId: 'mom'),
     Event(id: '2', title: 'Movie Night', dateTime: DateTime.now().add(const Duration(days: 5, hours: 20)), description: 'New Marvel movie', category: 'Social', userId: 'sister'),
     Event(id: '3', title: 'Golf with Dad', dateTime: DateTime.now().add(const Duration(days: 7, hours: 9)), description: 'Sunday morning golf', category: 'Personal', userId: 'dad'),

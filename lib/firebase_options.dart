@@ -29,45 +29,45 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAlzStHLHKCUaVIcvmjfIsdxeimBEJRc54',
-    appId: '1:1033860843007:web:f4d9bb3c7bd861d5b6d3ca',
-    messagingSenderId: '1033860843007',
-    projectId: 'daybrief-d6bf6',
-    authDomain: 'daybrief-d6bf6.firebaseapp.com',
-    storageBucket: 'daybrief-d6bf6.firebasestorage.app',
+    apiKey: 'YOUR_WEB_API_KEY',
+    appId: 'YOUR_WEB_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAlzStHLHKCUaVIcvmjfIsdxeimBEJRc54',
-    appId: '1:1033860843007:android:617554cdf3217190b6d3ca',
-    messagingSenderId: '1033860843007',
-    projectId: 'daybrief-d6bf6',
-    storageBucket: 'daybrief-d6bf6.firebasestorage.app',
+    apiKey: 'YOUR_ANDROID_API_KEY',
+    appId: 'YOUR_ANDROID_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAlzStHLHKCUaVIcvmjfIsdxeimBEJRc54',
-    appId: '1:1033860843007:ios:617554cdf3217190b6d3ca',
-    messagingSenderId: '1033860843007',
-    projectId: 'daybrief-d6bf6',
-    storageBucket: 'daybrief-d6bf6.firebasestorage.app',
+    apiKey: 'YOUR_IOS_API_KEY',
+    appId: 'YOUR_IOS_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
     iosBundleId: 'com.daybrief.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAlzStHLHKCUaVIcvmjfIsdxeimBEJRc54',
-    appId: '1:1033860843007:macos:617554cdf3217190b6d3ca',
-    messagingSenderId: '1033860843007',
-    projectId: 'daybrief-d6bf6',
-    storageBucket: 'daybrief-d6bf6.firebasestorage.app',
+    apiKey: 'YOUR_MACOS_API_KEY',
+    appId: 'YOUR_MACOS_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
     iosBundleId: 'com.daybrief.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAlzStHLHKCUaVIcvmjfIsdxeimBEJRc54',
-    appId: '1:1033860843007:windows:617554cdf3217190b6d3ca',
-    messagingSenderId: '1033860843007',
-    projectId: 'daybrief-d6bf6',
-    storageBucket: 'daybrief-d6bf6.firebasestorage.app',
+    apiKey: 'YOUR_WINDOWS_API_KEY',
+    appId: 'YOUR_WINDOWS_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
   );
 }

@@ -2,16 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
 
-export '../models/event.dart' show CalendarType;
-
-const Map<String, RecurrenceType> _recurrenceOptions = {
-  'Does not repeat': RecurrenceType.none,
-  'Daily': RecurrenceType.daily,
-  'Weekly': RecurrenceType.weekly,
-  'Monthly': RecurrenceType.monthly,
-  'Yearly': RecurrenceType.yearly,
-};
-
 class AddEventSheetDemo extends StatefulWidget {
   final Function(Event) onEventAdded;
   final Map<String, Color> categoryColors;
@@ -31,8 +21,6 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
   late DateTime _selectedDate;
   String _selectedCategory = 'Other';
   bool _reminderEnabled = true;
-  RecurrenceType _recurrenceType = RecurrenceType.none;
-  int _recurrenceEndAfter = 7;
   late AnimationController _animController;
   late Animation<double> _slideAnim;
   late Animation<double> _fadeAnim;
@@ -81,28 +69,14 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
 
   void _addEvent() {
     if (!_formKey.currentState!.validate()) return;
-    
-    CalendarType calendarType;
-    if (_selectedCategory == 'Work') {
-      calendarType = CalendarType.work;
-    } else if (_selectedCategory == 'Personal') {
-      calendarType = CalendarType.personal;
-    } else {
-      calendarType = CalendarType.family;
-    }
-    
     final event = Event(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
       dateTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _selectedTime.hour, _selectedTime.minute),
       description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
       category: _selectedCategory,
-      location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
       reminderEnabled: _reminderEnabled,
       userId: 'demo-user',
-      recurrenceType: _recurrenceType,
-      recurrenceEndAfter: _recurrenceType != RecurrenceType.none ? _recurrenceEndAfter : null,
-      calendarType: calendarType,
     );
     widget.onEventAdded(event);
     Navigator.pop(context);
@@ -233,69 +207,6 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
                           onChanged: (v) => setState(() => _reminderEnabled = v),
                           activeColor: widget.categoryColors['Work'] ?? const Color(0xFF1A73E8),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.repeat, color: widget.categoryColors['Work'] ?? const Color(0xFF1A73E8)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text('Repeat', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
-                            ),
-                            DropdownButton<RecurrenceType>(
-                              value: _recurrenceType,
-                              underline: const SizedBox(),
-                              isDense: true,
-                              items: _recurrenceOptions.entries.map((e) => DropdownMenuItem(
-                                value: e.value,
-                                child: Text(e.key, style: TextStyle(fontSize: 14, color: isDark ? Colors.white : const Color(0xFF202124))),
-                              )).toList(),
-                              onChanged: (v) => setState(() => _recurrenceType = v ?? RecurrenceType.none),
-                            ),
-                          ],
-                        ),
-                        if (_recurrenceType != RecurrenceType.none) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Text('Ends after ', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
-                              SizedBox(
-                                width: 60,
-                                child: TextFormField(
-                                  initialValue: _recurrenceEndAfter.toString(),
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
-                                  decoration: InputDecoration(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                    isDense: true,
-                                    filled: true,
-                                    fillColor: isDark ? const Color(0xFF3C3C3C) : Colors.white,
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                  ),
-                                  onChanged: (v) {
-                                    final parsed = int.tryParse(v);
-                                    if (parsed != null && parsed > 0) {
-                                      setState(() => _recurrenceEndAfter = parsed);
-                                    }
-                                  },
-                                ),
-                              ),
-                              Text(' times', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),

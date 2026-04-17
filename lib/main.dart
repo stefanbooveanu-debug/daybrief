@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
-import 'providers/event_provider.dart';
-import 'providers/voice_template_provider.dart';
-import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
-import 'theme/theme.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const DayBriefApp());
 }
 
@@ -83,12 +77,8 @@ class _DayBriefAppState extends State<DayBriefApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => EventProvider()),
-        ChangeNotifierProvider(create: (_) => VoiceTemplateProvider()),
-      ],
+    return ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
       child: Builder(
         builder: (context) {
           if (_isLoading) {
@@ -109,28 +99,86 @@ class _DayBriefAppState extends State<DayBriefApp> {
             title: 'DayBrief',
             debugShowCheckedModeBanner: false,
             themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: _buildTheme(false),
+            darkTheme: _buildTheme(true),
             home: Consumer<AuthProvider>(
               builder: (context, auth, _) {
-                if (!auth.isAuthenticated) {
-                  return const AuthScreen();
+                if (auth.isAuthenticated) {
+                  return HomeScreen(
+                    categoryColors: _categoryColors,
+                    onCategoryColorsChanged: (colors) {
+                      setState(() => _categoryColors = colors);
+                      _saveColors(colors);
+                    },
+                    onThemeChanged: (isDark) {
+                      setState(() => _isDarkMode = isDark);
+                      _saveDarkMode(isDark);
+                    },
+                  );
                 }
-                return HomeScreen(
-                  categoryColors: _categoryColors,
-                  onCategoryColorsChanged: (colors) {
-                    setState(() => _categoryColors = colors);
-                    _saveColors(colors);
-                  },
-                  onThemeChanged: (isDark) {
-                    setState(() => _isDarkMode = isDark);
-                    _saveDarkMode(isDark);
-                  },
-                );
+                return const AuthScreen();
               },
             ),
           );
         },
+      ),
+    );
+  }
+
+  ThemeData _buildTheme(bool isDark) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isDark ? Brightness.dark : Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _categoryColors['Work']!,
+        brightness: isDark ? Brightness.dark : Brightness.light,
+      ).copyWith(
+        primary: _categoryColors['Work'],
+        secondary: _categoryColors['Personal'],
+        error: _categoryColors['Health'],
+        surface: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        onSurface: isDark ? Colors.white : const Color(0xFF202124),
+      ),
+      scaffoldBackgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      appBarTheme: AppBarTheme(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        foregroundColor: isDark ? Colors.white : const Color(0xFF202124),
+        elevation: 0,
+      ),
+      cardTheme: CardTheme(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: isDark ? const Color(0xFF8AB4F8) : _categoryColors['Work'],
+          foregroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF1F3F4),
+        selectedColor: isDark ? const Color(0xFF8AB4F8) : _categoryColors['Work'],
+        labelStyle: TextStyle(fontSize: 14, color: isDark ? Colors.white : const Color(0xFF202124)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
       ),
     );
   }

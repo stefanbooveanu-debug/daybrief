@@ -56,7 +56,7 @@ class DemoState extends ChangeNotifier {
     if (_events.isEmpty) return "You have nothing scheduled today.";
     final buffer = StringBuffer("Hi! You have ${_events.length} events today. ");
     for (final e in _events) {
-      buffer.write("${e.title} at ${e.time.hour}:${e.time.minute.toString().padLeft(2, '0')}. ");
+      buffer.write("${e.title} at ${e.time.format(null)}. ");
     }
     return buffer.toString();
   }

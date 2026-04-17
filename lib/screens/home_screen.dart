@@ -1,16 +1,11 @@
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:provider/provider.dart';
 import '../models/event.dart';
-import '../providers/event_provider.dart';
-import '../theme/theme.dart';
 import '../widgets/add_event_sheet_demo.dart';
-import '../widgets/events_list_widget.dart';
+import '../widgets/event_card.dart';
 import 'week_view_screen_demo.dart';
 import 'settings_screen.dart';
 import 'month_view_screen.dart';
@@ -35,7 +30,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   DateTime _selectedDate = DateTime.now();
   List<Event> _events = [];
-  String? _selectedCategoryFilter;
   late AnimationController _fabAnimController;
   late Animation<double> _fabScaleAnim;
   late Animation<double> _fabRotateAnim;
@@ -45,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _speechEnabled = false;
   bool _isListening = false;
   bool _isSpeaking = false;
-  bool get isSpeaking => _isSpeaking;
 
   @override
   void initState() {
@@ -66,8 +59,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _initSpeech() async {
     _speechEnabled = await _speech.initialize(
-      onError: (e) => debugPrint('Speech error: $e'),
-      onStatus: (e) => debugPrint('Speech status: $e'),
+      onError: (e) => print('Speech error: $e'),
+      onStatus: (e) => print('Speech status: $e'),
     );
     
     await _tts.setLanguage('en-US');
@@ -137,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final now = DateTime.now();
       final dayName = DateFormat('EEEE').format(now);
       final monthName = DateFormat('MMMM').format(now);
-      await _speak("Today is $dayName, $monthName ${now.day}, ${now.year}");
+      await _speak("Today is $dayName, ${monthName} ${now.day}, ${now.year}");
     }
     else if (commandText.contains('what time is it') || commandText.contains("what's the time") || commandText.contains('tell me the time')) {
       final now = DateTime.now();
@@ -235,8 +228,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _addEvent(Event event) {
-    final eventProvider = context.read<EventProvider>();
-    
     final conflicts = _events.where((e) =>
       e.dateTime.year == event.dateTime.year &&
       e.dateTime.month == event.dateTime.month &&
@@ -249,8 +240,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _showMessage('Warning: Overlaps with "${conflicts.first.title}" at ${DateFormat('h:mm a').format(conflicts.first.dateTime)}');
     }
     
-    eventProvider.addEvent(event);
-    
     setState(() {
       _events.add(event);
       _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
@@ -258,47 +247,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _deleteEvent(String eventId) {
-    context.read<EventProvider>().deleteEvent(eventId);
     setState(() {
       _events.removeWhere((e) => e.id == eventId);
     });
   }
 
   void _completeEvent(String eventId) {
-    final eventProvider = context.read<EventProvider>();
-    final index = _events.indexWhere((e) => e.id == eventId);
-    if (index != -1) {
-      final updatedEvent = _events[index].copyWith(isCompleted: !_events[index].isCompleted);
-      eventProvider.addEvent(updatedEvent);
-      setState(() {
-        _events[index] = updatedEvent;
-      });
-    }
-  }
-
-  void _editEvent(Event event) {
-    _showEditEventSheet(event);
-  }
-
-  void _showEditEventSheet(Event event) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _EditEventSheet(
-        event: event,
-        categoryColors: widget.categoryColors,
-        onEventUpdated: (updatedEvent) {
-          context.read<EventProvider>().addEvent(updatedEvent);
-          setState(() {
-            final index = _events.indexWhere((e) => e.id == updatedEvent.id);
-            if (index != -1) {
-              _events[index] = updatedEvent;
-            }
-          });
-        },
-      ),
-    );
+    setState(() {
+      final index = _events.indexWhere((e) => e.id == eventId);
+      if (index != -1) {
+        _events[index] = _events[index].copyWith(isCompleted: !_events[index].isCompleted);
+      }
+    });
   }
 
   Future<void> _handleMoveEvent(String command) async {
@@ -399,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final now = DateTime.now();
     final weekEvents = _events.where((e) => 
       e.dateTime.isAfter(now.subtract(Duration(days: now.weekday))) && 
-      e.dateTime.isBefore(now.add(const Duration(days: 7)))
+      e.dateTime.isBefore(now.add(Duration(days: 7)))
     ).toList();
     
     if (weekEvents.isEmpty) {
@@ -475,7 +435,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       }
     }
     
-    time ??= const TimeOfDay(hour: 9, minute: 0);
+    if (time == null) {
+      time = const TimeOfDay(hour: 9, minute: 0);
+    }
     
     final event = Event(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -510,13 +472,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
     
     if (pickedDate != null) {
-      final context = this.context;
       final pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(event.dateTime),
       );
       
-      if (pickedTime != null && mounted) {
+      if (pickedTime != null) {
         final newEvent = Event(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: event.title,
@@ -568,12 +529,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _navigateToSettings() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     Navigator.of(context).push(_createRoute(SettingsScreen(
       categoryColors: widget.categoryColors,
       onThemeChanged: widget.onThemeChanged,
       onColorsChanged: widget.onCategoryColorsChanged,
-      isDarkMode: isDark,
     )));
   }
 
@@ -587,31 +546,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  void _goToToday() => setState(() => _selectedDate = DateTime.now());
   void _goToPreviousDay() => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1)));
   void _goToNextDay() => setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1)));
 
   bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
-  List<Event> _getFilteredEvents() {
-    var dayEvents = _events.where((e) => _isSameDay(e.dateTime, _selectedDate)).toList();
-    if (_selectedCategoryFilter != null) {
-      dayEvents = dayEvents.where((e) => e.category == _selectedCategoryFilter).toList();
-    }
-    return dayEvents;
-  }
+  List<Event> _getFilteredEvents() => _events.where((e) => _isSameDay(e.dateTime, _selectedDate)).toList();
 
   int _getUpcomingCount() => _events.where((e) => e.dateTime.isAfter(DateTime.now()) && e.dateTime.isBefore(DateTime.now().add(const Duration(hours: 24)))).length;
 
   List<Color> _getMotionColors() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      final hour = DateTime.now().hour;
-      if (hour >= 20 || hour < 5) {
-        return [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)];
-      }
-      return [const Color(0xFF121212), const Color(0xFF1E1E1E)];
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 8) {
+      return [const Color(0xFFFF9A8B), const Color(0xFFFF6A88), const Color(0xFFFF99AC)]; // Sunrise
+    } else if (hour >= 8 && hour < 12) {
+      return [const Color(0xFF667EEA), const Color(0xFF764BA2)]; // Morning
+    } else if (hour >= 12 && hour < 17) {
+      return [const Color(0xFF11998E), const Color(0xFF38EF7D)]; // Afternoon
+    } else if (hour >= 17 && hour < 20) {
+      return [const Color(0xFFFDA085), const Color(0xFFF6D365)]; // Sunset
+    } else if (hour >= 20 || hour < 5) {
+      return [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)]; // Night
     }
-    return [AppColors.cream, AppColors.peach];
+    return [const Color(0xFF667EEA), const Color(0xFF764BA2)];
   }
 
   @override
@@ -638,7 +596,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Column(
             children: [
               _buildHeader(isToday, isDark),
-              _buildCategoryFilter(isDark),
               _buildQuickStats(upcomingCount, isDark),
               _buildMiniCalendarStrip(isDark),
               Expanded(child: _buildEventsList(dayEvents, isDark)),
@@ -675,42 +632,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _buildBottomNav(isDark),
-    );
-  }
-
-  Widget _buildCategoryFilter(bool isDark) {
-    final categories = ['All', 'Work', 'Personal', 'Health', 'Social', 'Shopping', 'Other'];
-    return Container(
-      height: 40,
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          final isSelected = cat == 'All' ? _selectedCategoryFilter == null : _selectedCategoryFilter == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(cat),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategoryFilter = cat == 'All' ? null : cat;
-                });
-              },
-              selectedColor: widget.categoryColors[cat]?.withOpacity(0.3) ?? const Color(0xFF1A73E8).withOpacity(0.2),
-              checkmarkColor: const Color(0xFF1A73E8),
-              labelStyle: TextStyle(
-                color: isSelected 
-                    ? (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))
-                    : (isDark ? Colors.white70 : const Color(0xFF5F6368)),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -827,6 +748,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               itemBuilder: (context, index) {
                 final date = today.add(Duration(days: index));
                 final isSelected = _isSameDay(date, _selectedDate);
+                final isToday = _isSameDay(date, today);
                 
                 return GestureDetector(
                   onTap: () => setState(() => _selectedDate = date),
@@ -859,9 +781,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildMiniNavBtn(Icons.chevron_right, _goToPreviousDay, isDark),
+                _buildMiniNavBtn(Icons.chevron_left, _goToPreviousDay, isDark),
                 const SizedBox(height: 4),
-                _buildMiniNavBtn(Icons.chevron_left, _goToNextDay, isDark),
+                _buildMiniNavBtn(Icons.chevron_right, _goToNextDay, isDark),
               ],
             ),
           ),
@@ -882,75 +804,76 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildEventsList(List<Event> dayEvents, bool isDark) {
-    return EventsListWidget(
-      events: dayEvents,
-      categoryColors: widget.categoryColors,
-      isDark: isDark,
-      onNavigateToWeekView: _navigateToWeekView,
-      onNavigateToMonthView: _navigateToMonthView,
-      onEventTap: (event) {},
-      onDelete: _deleteEvent,
-      onDuplicate: _duplicateEvent,
-      onComplete: _completeEvent,
-      onEdit: _editEvent,
-      onShare: _shareEvent,
-    );
-  }
-
-  void _shareEvent(Event event) {
-    _showShareEventSheet(event);
-  }
-
-  void _showShareEventSheet(Event event) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
+    if (dayEvents.isEmpty) {
+      return Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Share Event',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF202124),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.elasticOut,
+              builder: (context, value, child) => Transform.scale(scale: value, child: child),
+              child: Container(
+                width: 120, height: 120,
+                decoration: BoxDecoration(
+                  color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(60),
+                ),
+                child: Icon(Icons.event_available_rounded, size: 60, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
               ),
             ),
             const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.link, color: Color(0xFF1A73E8)),
-              title: const Text('Copy to Clipboard'),
-              subtitle: const Text('Copy event details as text'),
-              onTap: () {
-                final text = '${event.title}\n📅 ${DateFormat('EEEE, MMMM d, yyyy • h:mm a').format(event.dateTime)}${event.location != null ? '\n📍 ${event.location}' : ''}${event.description != null ? '\n📝 ${event.description}' : ''}';
-                Clipboard.setData(ClipboardData(text: text));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Event copied to clipboard!')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share, color: Color(0xFF34A853)),
-              title: const Text('Share via Apps'),
-              subtitle: const Text('Send via messaging, email, etc.'),
-              onTap: () {
-                final eventText = '${event.title}\n📅 ${DateFormat('EEEE, MMMM d, yyyy • h:mm a').format(event.dateTime)}${event.location != null ? '\n📍 ${event.location}' : ''}${event.description != null ? '\n📝 ${event.description}' : ''}';
-                Share.share(eventText, subject: event.title);
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 16),
+            Text('No events scheduled', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
+            const SizedBox(height: 8),
+            Text('Tap the button below to add one', style: TextStyle(fontSize: 15, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+            const SizedBox(height: 140),
           ],
         ),
-      ),
+      );
+    }
+
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 180),
+      itemCount: dayEvents.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), borderRadius: BorderRadius.circular(20)),
+                  child: Text('${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
+                    style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _navigateToWeekView,
+                  icon: Icon(Icons.calendar_view_week, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
+                  label: Text('Week View', style: TextStyle(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))),
+                ),
+                TextButton.icon(
+                  onPressed: _navigateToMonthView,
+                  icon: Icon(Icons.calendar_month, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
+                  label: Text('Month', style: TextStyle(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        final event = dayEvents[index - 1];
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 300 + (index * 50)),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) => Transform.translate(offset: Offset(50 * (1 - value), 0), child: Opacity(opacity: value, child: child)),
+          child: Padding(padding: const EdgeInsets.only(bottom: 12), child: EventCard(event: event, onDelete: () => _deleteEvent(event.id), onDuplicate: () => _duplicateEvent(event), onComplete: () => _completeEvent(event.id), isDark: isDark, categoryColors: widget.categoryColors)),
+        );
+      },
     );
   }
 
@@ -997,167 +920,5 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
       ),
     );
-  }
-}
-
-class _EditEventSheet extends StatefulWidget {
-  final Event event;
-  final Map<String, Color> categoryColors;
-  final Function(Event) onEventUpdated;
-
-  const _EditEventSheet({
-    required this.event,
-    required this.categoryColors,
-    required this.onEventUpdated,
-  });
-
-  @override
-  State<_EditEventSheet> createState() => _EditEventSheetState();
-}
-
-class _EditEventSheetState extends State<_EditEventSheet> {
-  late TextEditingController _titleController;
-  late TextEditingController _locationController;
-  late TextEditingController _descriptionController;
-  late TimeOfDay _selectedTime;
-  late DateTime _selectedDate;
-  late String _selectedCategory;
-  late bool _reminderEnabled;
-  late RecurrenceType _recurrenceType;
-  late int _recurrenceEndAfter;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.event.title);
-    _locationController = TextEditingController(text: widget.event.location ?? '');
-    _descriptionController = TextEditingController(text: widget.event.description ?? '');
-    _selectedTime = TimeOfDay.fromDateTime(widget.event.dateTime);
-    _selectedDate = widget.event.dateTime;
-    _selectedCategory = widget.event.category ?? 'Other';
-    _reminderEnabled = widget.event.reminderEnabled;
-    _recurrenceType = widget.event.recurrenceType;
-    _recurrenceEndAfter = widget.event.recurrenceEndAfter ?? 7;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _locationController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(child: Container(margin: const EdgeInsets.only(bottom: 16), width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)))),
-              Text('Edit Event', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
-              const SizedBox(height: 24),
-              TextField(controller: _titleController, decoration: InputDecoration(hintText: 'Event title', prefixIcon: const Icon(Icons.edit), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA)), textCapitalization: TextCapitalization.sentences),
-              const SizedBox(height: 16),
-              Row(children: [
-                Expanded(child: _buildFieldCard(Icons.calendar_today, DateFormat('EEE, MMM d').format(_selectedDate), _selectDate, isDark)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildFieldCard(Icons.access_time, _selectedTime.format(context), _selectTime, isDark)),
-              ]),
-              const SizedBox(height: 16),
-              Text('Category', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : const Color(0xFF5F6368))),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ['Work', 'Personal', 'Health', 'Social', 'Shopping', 'Other'].map((cat) => ChoiceChip(
-                  label: Text(cat),
-                  selected: _selectedCategory == cat,
-                  onSelected: (s) => setState(() => _selectedCategory = cat),
-                  selectedColor: widget.categoryColors[cat]?.withOpacity(0.3),
-                )).toList(),
-              ),
-              const SizedBox(height: 16),
-              TextField(controller: _locationController, decoration: InputDecoration(hintText: 'Location', prefixIcon: const Icon(Icons.location_on_outlined), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA))),
-              const SizedBox(height: 16),
-              TextField(controller: _descriptionController, decoration: InputDecoration(hintText: 'Notes', prefixIcon: const Icon(Icons.notes), filled: true, fillColor: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA)), maxLines: 2),
-              const SizedBox(height: 16),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Reminder', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124))),
-                Switch(value: _reminderEnabled, onChanged: (v) => setState(() => _reminderEnabled = v)),
-              ]),
-              const SizedBox(height: 16),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Repeat', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124))),
-                DropdownButton<RecurrenceType>(
-                  value: _recurrenceType,
-                  underline: const SizedBox(),
-                  items: const [
-                    DropdownMenuItem(value: RecurrenceType.none, child: Text('None')),
-                    DropdownMenuItem(value: RecurrenceType.daily, child: Text('Daily')),
-                    DropdownMenuItem(value: RecurrenceType.weekly, child: Text('Weekly')),
-                    DropdownMenuItem(value: RecurrenceType.monthly, child: Text('Monthly')),
-                  ],
-                  onChanged: (v) => setState(() => _recurrenceType = v ?? RecurrenceType.none),
-                ),
-              ]),
-              const SizedBox(height: 24),
-              FilledButton(onPressed: _updateEvent, style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1A73E8), padding: const EdgeInsets.symmetric(vertical: 16)), child: const Text('Save Changes')),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFieldCard(IconData icon, String label, VoidCallback onTap, bool isDark) {
-    return Material(color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12),
-      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(12),
-        child: Container(padding: const EdgeInsets.all(16), child: Row(children: [
-          Icon(icon, color: const Color(0xFF1A73E8)),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
-        ]))));
-  }
-
-  Future<void> _selectTime() async {
-    final picked = await showTimePicker(context: context, initialTime: _selectedTime);
-    if (picked != null) setState(() => _selectedTime = picked);
-  }
-
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)), lastDate: DateTime.now().add(const Duration(days: 365)));
-    if (picked != null) setState(() => _selectedDate = picked);
-  }
-
-  void _updateEvent() {
-    if (_titleController.text.trim().isEmpty) return;
-    
-    final updatedEvent = widget.event.copyWith(
-      title: _titleController.text.trim(),
-      dateTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _selectedTime.hour, _selectedTime.minute),
-      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-      location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-      category: _selectedCategory,
-      reminderEnabled: _reminderEnabled,
-      recurrenceType: _recurrenceType,
-      recurrenceEndAfter: _recurrenceType != RecurrenceType.none ? _recurrenceEndAfter : null,
-    );
-    
-    widget.onEventUpdated(updatedEvent);
-    Navigator.pop(context);
   }
 }

@@ -69,40 +69,20 @@ class FirebaseService {
   }
 
   Future<void> addEvent(Event event) async {
-    final userId = currentUser?.uid;
-    if (userId == null) return;
-    
-    final eventWithUser = event.copyWith(userId: userId);
-    await _firestore.collection('users').doc(userId).collection('events').add(eventWithUser.toMap());
+    await _firestore.collection('events').add(event.toMap());
   }
 
   Future<void> deleteEvent(String eventId) async {
-    final userId = currentUser?.uid;
-    if (userId == null) return;
-    
-    await _firestore.collection('users').doc(userId).collection('events').doc(eventId).delete();
+    await _firestore.collection('events').doc(eventId).delete();
   }
 
   Future<void> updateEvent(Event event) async {
-    final userId = currentUser?.uid;
-    if (userId == null) return;
-    
-    await _firestore.collection('users').doc(userId).collection('events').doc(event.id).update(event.toMap());
-  }
-
-  Stream<List<Event>> getUserEvents() {
-    final userId = currentUser?.uid;
-    if (userId == null) {
-      return Stream.value([]);
-    }
-    
-    return _firestore
-        .collection('users')
-        .doc(userId)
+    final events = await _firestore
         .collection('events')
-        .orderBy('dateTime')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Event.fromMap(doc.data())).toList());
+        .where('id', isEqualTo: event.id)
+        .get();
+    if (events.docs.isNotEmpty) {
+      await events.docs.first.reference.update(event.toMap());
+    }
   }
 }

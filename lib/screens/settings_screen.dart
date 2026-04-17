@@ -3,21 +3,17 @@ import 'time_report_screen.dart';
 import 'share_calendar_screen.dart';
 import 'quick_poll_screen.dart';
 import 'family_calendar_screen.dart';
-import 'calendar_sync_screen.dart';
-import 'voice_templates_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
   final Function(Map<String, Color>)? onColorsChanged;
   final Map<String, Color> categoryColors;
-  final bool isDarkMode;
   
   const SettingsScreen({
     super.key,
     this.onThemeChanged,
     this.onColorsChanged,
     required this.categoryColors,
-    required this.isDarkMode,
   });
 
   @override
@@ -32,26 +28,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hapticFeedback = true;
   bool _smartSnooze = true;
   bool _conflictDetection = true;
+  bool _isDarkMode = false;
   TimeOfDay _morningBriefing = const TimeOfDay(hour: 7, minute: 0);
-  late bool _isDark;
   
   late Map<String, Color> _categoryColors;
 
   @override
   void initState() {
     super.initState();
-    _isDark = widget.isDarkMode;
     _categoryColors = Map.from(widget.categoryColors);
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
   }
   
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: _isDark ? ThemeData.dark() : ThemeData.light(),
-      child: Builder(
-        builder: (ctx) {
-          final isDark = _isDark;
-          return Scaffold(
+    final isDark = _isDarkMode;
+    
+    return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -78,14 +71,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Dark Mode',
                 'Save battery & easy on eyes',
                 Icons.dark_mode_outlined,
-                _isDark,
+                _isDarkMode,
                 (value) {
-                  setState(() {
-                    _isDark = value;
-                  });
+                  setState(() => _isDarkMode = value);
                   widget.onThemeChanged?.call(value);
                 },
-                isDark: _isDark,
+                isDark: isDark,
               ),
             ],
             isDark: isDark,
@@ -153,16 +144,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             'Collaboration',
             [
-              _buildNavTile('Calendar Sync', 'Import/Export & Google Calendar', Icons.sync, () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => CalendarSyncScreen(events: const [], onEventsImported: (e) {})));
-              }, isDark),
               _buildNavTile('Share Calendar', 'Let others view your schedule', Icons.share_outlined, () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: [])));
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: const [])));
               }, isDark),
               _buildNavTile('Quick Poll', 'Find the best meeting time', Icons.how_to_vote_outlined, () {
+                Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const QuickPollScreen()));
               }, isDark),
               _buildNavTile('Family Calendar', 'Shared family events', Icons.family_restroom_outlined, () {
+                Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => FamilyCalendarScreen(onAddEvent: (e) {})));
               }, isDark),
             ],
@@ -196,9 +187,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (value) => setState(() => _hapticFeedback = value),
                 isDark: isDark,
               ),
-              _buildNavTile('Voice Templates', 'Quick commands for common events', Icons.record_voice_over_outlined, () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const VoiceTemplatesScreen()));
-              }, isDark),
             ],
             isDark: isDark,
           ),
@@ -260,9 +248,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
-      ),
-    );
-        },
       ),
     );
   }

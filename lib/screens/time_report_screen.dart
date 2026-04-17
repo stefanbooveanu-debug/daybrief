@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/event.dart';
 
 class TimeReportScreen extends StatelessWidget {
@@ -64,8 +65,8 @@ class TimeReportScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF8AB4F8), Color(0xFF1A73E8)],
+        gradient: LinearGradient(
+          colors: [const Color(0xFF8AB4F8), const Color(0xFF1A73E8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -127,7 +128,7 @@ class TimeReportScreen extends StatelessWidget {
         
         return Column(
           children: [
-            Text('$dayEvents', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
+            Text('${dayEvents}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
             const SizedBox(height: 8),
             Container(
               width: 30,

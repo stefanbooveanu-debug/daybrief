@@ -15,8 +15,8 @@ class SpeechService {
     
     try {
       _isInitialized = await _speechToText.initialize(
-        onError: (error) => debugPrint('Speech error: $error'),
-        onStatus: (status) => debugPrint('Speech status: $status'),
+        onError: (error) => print('Speech error: $error'),
+        onStatus: (status) => print('Speech status: $status'),
       );
       
       if (!kIsWeb) {
@@ -28,7 +28,7 @@ class SpeechService {
       
       return _isInitialized;
     } catch (e) {
-      debugPrint('Speech init error: $e');
+      print('Speech init error: $e');
       return false;
     }
   }
@@ -41,7 +41,7 @@ class SpeechService {
     if (!_isInitialized) {
       final success = await initialize();
       if (!success) {
-        debugPrint('Speech not available on this device');
+        print('Speech not available on this device');
         return;
       }
     }
@@ -60,14 +60,12 @@ class SpeechService {
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
-        listenOptions: SpeechListenOptions(
-          partialResults: false,
-          cancelOnError: true,
-          listenMode: ListenMode.confirmation,
-        ),
+        partialResults: false,
+        cancelOnError: true,
+        listenMode: ListenMode.confirmation,
       );
     } catch (e) {
-      debugPrint('Listen error: $e');
+      print('Listen error: $e');
       _isListening = false;
       onListeningStopped?.call();
     }
@@ -93,7 +91,7 @@ class SpeechService {
       await _flutterTts.setSpeechRate(0.5);
       await _flutterTts.speak(text);
     } catch (e) {
-      debugPrint('Web TTS error: $e');
+      print('Web TTS error: $e');
     }
   }
 

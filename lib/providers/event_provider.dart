@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/firebase_service.dart';
 import '../models/event.dart';
@@ -8,42 +7,13 @@ class EventProvider with ChangeNotifier {
   List<Event> _events = [];
   bool _isLoading = false;
   String? _error;
-  StreamSubscription? _eventsSubscription;
-  CalendarType? _selectedFilter;
 
   List<Event> get events => _events;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  CalendarType? get selectedFilter => _selectedFilter;
 
-  List<Event> get filteredEvents {
-    if (_selectedFilter == null) return _events;
-    return _events.where((e) => e.calendarType == _selectedFilter).toList();
-  }
-
-  void setFilter(CalendarType? type) {
-    _selectedFilter = type;
-    notifyListeners();
-  }
-
-  Stream<List<Event>> get todayEventsStream => _firebaseService.getUserEvents();
-
-  EventProvider() {
-    _subscribeToEvents();
-  }
-
-  void _subscribeToEvents() {
-    _eventsSubscription = _firebaseService.getUserEvents().listen(
-      (events) {
-        _events = events;
-        notifyListeners();
-      },
-      onError: (error) {
-        _error = error.toString();
-        notifyListeners();
-      },
-    );
-  }
+  Stream<List<Event>> get todayEventsStream =>
+      _firebaseService.getTodayEvents();
 
   void updateEvents(List<Event> events) {
     _events = events;
