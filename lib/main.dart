@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
 import 'providers/event_provider.dart';
 import 'screens/auth_screen.dart';
@@ -8,6 +9,8 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ro_RO', null);
+  Intl.defaultLocale = 'ro_RO';
   runApp(const DayBriefApp());
 }
 

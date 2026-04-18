@@ -349,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               children: [
                 Text(
-                  DateFormat('EEEE', 'ro').format(_selectedDay),
+                  DateFormat('EEEE', 'ro_RO').format(_selectedDay),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Text(
-                      DateFormat('d MMMM yyyy', 'ro').format(_selectedDay),
+                      DateFormat('d MMMM yyyy', 'ro_RO').format(_selectedDay),
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
