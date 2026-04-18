@@ -3,9 +3,9 @@ import 'package:intl/intl.dart';
 import '../models/event.dart';
 
 class ShareCalendarScreen extends StatefulWidget {
-  final List<Event> events;
+  final List<Event>? events;
   
-  const ShareCalendarScreen({super.key, required this.events});
+  const ShareCalendarScreen({super.key, this.events});
 
   @override
   State<ShareCalendarScreen> createState() => _ShareCalendarScreenState();
@@ -99,7 +99,7 @@ class _ShareCalendarScreenState extends State<ShareCalendarScreen> {
           const SizedBox(height: 32),
           Text('Upcoming Events', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
           const SizedBox(height: 16),
-          if (widget.events.isEmpty)
+          if ((widget.events ?? []).isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -109,7 +109,7 @@ class _ShareCalendarScreenState extends State<ShareCalendarScreen> {
               child: Center(child: Text('No events to share', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]))),
             )
           else
-            ...widget.events.take(5).map((e) => _buildEventTile(e, isDark)),
+            ...(widget.events ?? []).take(5).map((e) => _buildEventTile(e, isDark)),
         ],
       ),
     );

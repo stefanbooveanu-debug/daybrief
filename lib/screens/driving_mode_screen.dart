@@ -72,7 +72,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   // incarcam evenimentele de azi din provider
   void _loadTodayEvents() {
     final events =
-        context.read<EventProvider>().getEventsForDate(DateTime.now());
+        context.read<EventProvider>().getEventsForDay(DateTime.now());
     setState(() => _todayEvents = events);
   }
 

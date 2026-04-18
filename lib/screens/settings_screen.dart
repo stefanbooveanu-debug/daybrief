@@ -8,13 +8,13 @@ import 'driving_mode_screen.dart';
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
   final Function(Map<String, Color>)? onColorsChanged;
-  final Map<String, Color> categoryColors;
+  final Map<String, Color>? categoryColors;
   
   const SettingsScreen({
     super.key,
     this.onThemeChanged,
     this.onColorsChanged,
-    required this.categoryColors,
+    this.categoryColors,
   });
 
   @override
@@ -37,7 +37,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _categoryColors = Map.from(widget.categoryColors);
+    _categoryColors = Map.from(widget.categoryColors ?? {
+      'Work': const Color(0xFF1A73E8),
+      'Personal': const Color(0xFF34A853),
+      'Health': const Color(0xFFEA4335),
+      'Social': const Color(0xFF9334E6),
+      'Shopping': const Color(0xFFFBBC04),
+    });
   }
   
   @override
@@ -164,10 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }, isDark),
               _buildNavTile('Driving Mode', 'Voice-only safe mode', Icons.directions_car_outlined, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => DrivingModeScreen(
-                  events: const [],
-                  categoryColors: _categoryColors,
-                )));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const DrivingModeScreen()));
               }, isDark),
             ],
             isDark: isDark,

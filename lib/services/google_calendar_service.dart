@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/event.dart';
@@ -55,7 +54,6 @@ class GoogleCalendarService {
     return {
       'summary': event.title,
       'description': event.description ?? '',
-      'location': event.location ?? '',
       'start': {
         'dateTime': event.dateTime.toIso8601String(),
         'timeZone': 'UTC',
@@ -64,23 +62,7 @@ class GoogleCalendarService {
         'dateTime': endTime.toIso8601String(),
         'timeZone': 'UTC',
       },
-      'recurrence': _getRecurrenceRule(event),
     };
-  }
-
-  List<String>? _getRecurrenceRule(Event event) {
-    switch (event.recurrenceType) {
-      case RecurrenceType.daily:
-        return ['RRULE:FREQ=DAILY'];
-      case RecurrenceType.weekly:
-        return ['RRULE:FREQ=WEEKLY'];
-      case RecurrenceType.monthly:
-        return ['RRULE:FREQ=MONTHLY'];
-      case RecurrenceType.yearly:
-        return ['RRULE:FREQ=YEARLY'];
-      case RecurrenceType.none:
-        return null;
-    }
   }
 
   String generateIcsFile(List<Event> events) {
@@ -97,9 +79,6 @@ class GoogleCalendarService {
       buffer.writeln('SUMMARY:${event.title}');
       if (event.description != null) {
         buffer.writeln('DESCRIPTION:${event.description}');
-      }
-      if (event.location != null) {
-        buffer.writeln('LOCATION:${event.location}');
       }
       buffer.writeln('END:VEVENT');
     }
@@ -120,7 +99,6 @@ class GoogleCalendarService {
     DateTime? start;
     String title = '';
     String? description;
-    String? location;
     
     for (final line in lines) {
       if (line.startsWith('BEGIN:VEVENT')) {
@@ -128,14 +106,12 @@ class GoogleCalendarService {
         start = null;
         title = '';
         description = null;
-        location = null;
       } else if (line.startsWith('END:VEVENT') && currentEventUid != null && start != null) {
         events.add(Event(
           id: currentEventUid,
           title: title.isNotEmpty ? title : 'Imported Event',
           dateTime: start,
           description: description,
-          location: location,
           userId: 'imported',
         ));
         currentEventUid = null;
@@ -146,8 +122,6 @@ class GoogleCalendarService {
           title = line.substring(8);
         } else if (line.startsWith('DESCRIPTION:')) {
           description = line.substring(12);
-        } else if (line.startsWith('LOCATION:')) {
-          location = line.substring(9);
         }
       }
     }

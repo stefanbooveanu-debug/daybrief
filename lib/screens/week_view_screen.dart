@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/event_provider.dart';
-import '../providers/auth_provider.dart';
-import '../models/event.dart';
 import '../widgets/event_card.dart';
 import '../widgets/add_event_sheet.dart';
 
@@ -172,90 +170,80 @@ class _WeekViewScreenState extends State<WeekViewScreen> {
           Expanded(
             child: Consumer<EventProvider>(
               builder: (context, eventProvider, _) {
-                return StreamBuilder<List<Event>>(
-                  stream: eventProvider.todayEventsStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                final allEvents = eventProvider.events;
 
-                    final allEvents = snapshot.data ?? [];
-                    eventProvider.updateEvents(allEvents);
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: weekDays.length,
+                  itemBuilder: (context, index) {
+                    final day = weekDays[index];
+                    final isToday = _isSameDay(day, today);
+                    final dayEvents = allEvents.where((e) => _isSameDay(e.dateTime, day)).toList()
+                      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: weekDays.length,
-                      itemBuilder: (context, index) {
-                        final day = weekDays[index];
-                        final isToday = _isSameDay(day, today);
-                        final dayEvents = allEvents.where((e) => _isSameDay(e.dateTime, day)).toList()
-                          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (isToday || dayEvents.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16, bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: isToday ? const Color(0xFF1A73E8) : const Color(0xFFF1F3F4),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Text(
-                                        isToday ? 'Today' : DateFormat('EEE, MMM d').format(day),
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: isToday ? Colors.white : const Color(0xFF5F6368),
-                                        ),
-                                      ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (isToday || dayEvents.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16, bottom: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isToday ? const Color(0xFF1A73E8) : const Color(0xFFF1F3F4),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    isToday ? 'Today' : DateFormat('EEE, MMM d').format(day),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: isToday ? Colors.white : const Color(0xFF5F6368),
                                     ),
-                                    if (dayEvents.isNotEmpty) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFE8F0FE),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          '${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: Color(0xFF1A73E8),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            if (dayEvents.isEmpty && isToday)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: Text(
-                                  'No events',
-                                  style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
-                              )
-                            else if (dayEvents.isNotEmpty)
-                              ...dayEvents.map((event) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: EventCard(
-                                      event: event,
-                                      onDelete: () => eventProvider.deleteEvent(event.id),
+                                if (dayEvents.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8F0FE),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                  )),
-                          ],
-                        );
-                      },
+                                    child: Text(
+                                      '${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF1A73E8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        if (dayEvents.isEmpty && isToday)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              'No events',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          )
+                        else if (dayEvents.isNotEmpty)
+                          ...dayEvents.map((event) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: EventCard(
+                                  event: event,
+                                  onDelete: () => eventProvider.deleteEvent(event.id),
+                                ),
+                              )),
+                      ],
                     );
                   },
                 );

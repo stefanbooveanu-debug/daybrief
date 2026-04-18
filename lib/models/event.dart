@@ -1,3 +1,5 @@
+enum RecurrenceType { none, daily, weekly, monthly, yearly }
+
 class Event {
   final String id;
   final String title;
@@ -7,6 +9,8 @@ class Event {
   final bool reminderEnabled;
   final bool isCompleted;
   final String userId;
+  final String? location;
+  final RecurrenceType recurrenceType;
 
   Event({
     required this.id,
@@ -17,6 +21,8 @@ class Event {
     this.reminderEnabled = true,
     this.isCompleted = false,
     required this.userId,
+    this.location,
+    this.recurrenceType = RecurrenceType.none,
   });
 
   DateTime? get reminderTime => reminderEnabled ? dateTime.subtract(const Duration(hours: 1)) : null;
@@ -31,6 +37,8 @@ class Event {
       'reminderEnabled': reminderEnabled,
       'isCompleted': isCompleted,
       'userId': userId,
+      'location': location,
+      'recurrenceType': recurrenceType.index,
     };
   }
 
@@ -44,6 +52,8 @@ class Event {
       reminderEnabled: map['reminderEnabled'] ?? true,
       isCompleted: map['isCompleted'] ?? false,
       userId: map['userId'] ?? '',
+      location: map['location'],
+      recurrenceType: RecurrenceType.values[map['recurrenceType'] ?? 0],
     );
   }
 
@@ -56,6 +66,8 @@ class Event {
     bool? reminderEnabled,
     bool? isCompleted,
     String? userId,
+    String? location,
+    RecurrenceType? recurrenceType,
   }) {
     return Event(
       id: id ?? this.id,
@@ -66,6 +78,8 @@ class Event {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       isCompleted: isCompleted ?? this.isCompleted,
       userId: userId ?? this.userId,
+      location: location ?? this.location,
+      recurrenceType: recurrenceType ?? this.recurrenceType,
     );
   }
 }

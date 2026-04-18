@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/event_provider.dart';
 import '../models/event.dart';
 import '../widgets/event_card.dart';
 import '../widgets/add_event_sheet_demo.dart';
 
 class MonthViewScreen extends StatefulWidget {
-  final List<Event> events;
-  final Function(Event) onAddEvent;
-  final Function(DateTime) onSelectDate;
-  final Map<String, Color> categoryColors;
+  final List<Event>? events;
+  final Function(Event)? onAddEvent;
+  final Function(DateTime)? onSelectDate;
+  final Map<String, Color>? categoryColors;
 
   const MonthViewScreen({
     super.key,
-    required this.events,
-    required this.onAddEvent,
-    required this.onSelectDate,
-    required this.categoryColors,
+    this.events,
+    this.onAddEvent,
+    this.onSelectDate,
+    this.categoryColors,
   });
 
   @override
@@ -33,26 +35,40 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     _selectedDate = DateTime.now();
   }
 
-  void _previousMonth() => setState(() => _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1));
-  void _nextMonth() => setState(() => _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1));
-  void _goToToday() => setState(() {
-    _currentMonth = DateTime.now();
-    _selectedDate = DateTime.now();
-  });
-
   bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
   int _getDaysInMonth(DateTime date) => DateTime(date.year, date.month + 1, 0).day;
   int _getFirstDayOfWeek(DateTime date) => DateTime(date.year, date.month, 1).weekday % 7;
 
-  List<Event> _getEventsForDay(DateTime day) => widget.events.where((e) => _isSameDay(e.dateTime, day)).toList();
+  List<Event> _getEventsForDay(List<Event> events, DateTime day) => events.where((e) => _isSameDay(e.dateTime, day)).toList();
+
+  void _goToToday() {
+    setState(() {
+      _currentMonth = DateTime.now();
+      _selectedDate = DateTime.now();
+    });
+  }
+
+  void _previousMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final eventProvider = context.watch<EventProvider>();
+    final events = widget.events ?? eventProvider.events;
     final daysInMonth = _getDaysInMonth(_currentMonth);
     final firstDayOffset = _getFirstDayOfWeek(_currentMonth);
-    final selectedDayEvents = _selectedDate != null ? _getEventsForDay(_selectedDate!) : <Event>[];
+    final selectedDayEvents = _selectedDate != null ? _getEventsForDay(events, _selectedDate!) : <Event>[];
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
@@ -106,8 +122,8 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                 final date = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
                 final isToday = _isSameDay(date, DateTime.now());
                 final isSelected = _selectedDate != null && _isSameDay(date, _selectedDate!);
-                final hasEvents = _getEventsForDay(date).isNotEmpty;
-                final eventCount = _getEventsForDay(date).length;
+                final hasEvents = _getEventsForDay(events, date).isNotEmpty;
+                final eventCount = _getEventsForDay(events, date).length;
 
                 return GestureDetector(
                   onTap: () => setState(() => _selectedDate = date),

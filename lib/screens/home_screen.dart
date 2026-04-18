@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
-import '../providers/voice_provider.dart';
-import '../models/event.dart';
 import '../widgets/add_event_sheet.dart';
 import '../widgets/event_card.dart';
 import '../widgets/voice_assistant_button.dart';
@@ -18,7 +16,16 @@ import 'driving_mode_screen.dart';
 import 'family_calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Map<String, Color>? categoryColors;
+  final Function(Map<String, Color>)? onCategoryColorsChanged;
+  final Function(bool)? onThemeChanged;
+
+  const HomeScreen({
+    super.key,
+    this.categoryColors,
+    this.onCategoryColorsChanged,
+    this.onThemeChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -61,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _headerController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EventProvider>().loadEvents();
+      context.read<EventProvider>().refreshEvents();
     });
   }
 
@@ -76,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {
       _selectedDay = _selectedDay.add(Duration(days: delta));
     });
-    context.read<EventProvider>().loadEventsForDate(_selectedDay);
   }
 
   void _openAddEvent() {
@@ -84,13 +90,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AddEventSheet(selectedDate: _selectedDay),
+      builder: (_) => AddEventSheet(initialDate: _selectedDay),
     );
   }
 
   void _toggleTheme() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     setState(() => _showThemeAnimation = true);
-    context.read<AuthProvider>().toggleTheme();
+    widget.onThemeChanged?.call(!isDark);
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) setState(() => _showThemeAnimation = false);
     });
@@ -109,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<AuthProvider>().isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark
         ? const Color(0xFF1A0E00)
         : const Color(0xFFFFF5EC);
@@ -120,8 +127,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ? const Color(0xFFFFF5EC)
         : const Color(0xFF1A0A00);
 
-    return AnimatedThemeWrapper(
-      showAnimation: _showThemeAnimation,
+    return SmoothThemeTransition(
       isDark: isDark,
       child: Scaffold(
         backgroundColor: bgColor,
@@ -151,8 +157,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildHeader(bool isDark, Color textColor, Color cardColor) {
-    final user = context.watch<AuthProvider>().currentUser;
-    final isDemo = context.watch<AuthProvider>().isDemoMode;
+    final authProvider = context.watch<AuthProvider>();
+    final userName = authProvider.userName ?? 'Utilizator';
     final hour = DateTime.now().hour;
     final greeting = hour < 12
         ? 'Bună dimineața'
@@ -177,41 +183,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      isDemo
-                          ? 'Demo Mode'
-                          : (user?.displayName?.split(' ')[0] ??
-                              user?.email?.split('@')[0] ??
-                              'Utilizator'),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: textColor,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    if (isDemo)
-                      Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFB347).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'DEMO',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFFFF8C69),
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                  ],
+                Text(
+                  userName,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ],
             ),
@@ -240,7 +219,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildHeaderButton(
             icon: Icons.settings_rounded,
             onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                MaterialPageRoute(builder: (_) => SettingsScreen(
+                  categoryColors: widget.categoryColors ?? {},
+                  onThemeChanged: widget.onThemeChanged,
+                  onColorsChanged: widget.onCategoryColorsChanged,
+                ))),
             isDark: isDark,
           ),
         ],
@@ -362,7 +345,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           GestureDetector(
             onTap: () {
               setState(() => _selectedDay = DateTime.now());
-              context.read<EventProvider>().loadEventsForDate(DateTime.now());
             },
             child: Column(
               children: [
@@ -422,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildEventsList(bool isDark, Color textColor, Color cardColor) {
     return Consumer<EventProvider>(
       builder: (context, eventProvider, _) {
-        final events = eventProvider.getEventsForDate(_selectedDay);
+        final events = eventProvider.getEventsForDay(_selectedDay);
 
         if (eventProvider.isLoading) {
           return const Center(

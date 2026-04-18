@@ -3,10 +3,10 @@ import 'package:intl/intl.dart';
 import '../models/event.dart';
 
 class AddEventSheetDemo extends StatefulWidget {
-  final Function(Event) onEventAdded;
-  final Map<String, Color> categoryColors;
+  final Function(Event)? onEventAdded;
+  final Map<String, Color>? categoryColors;
 
-  const AddEventSheetDemo({super.key, required this.onEventAdded, required this.categoryColors});
+  const AddEventSheetDemo({super.key, this.onEventAdded, this.categoryColors});
 
   @override
   State<AddEventSheetDemo> createState() => _AddEventSheetDemoState();
@@ -25,14 +25,17 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
   late Animation<double> _slideAnim;
   late Animation<double> _fadeAnim;
 
-  List<Map<String, dynamic>> get _categories => [
-    {'name': 'Work', 'icon': Icons.work_outline, 'color': widget.categoryColors['Work'] ?? const Color(0xFF1A73E8)},
-    {'name': 'Personal', 'icon': Icons.person_outline, 'color': widget.categoryColors['Personal'] ?? const Color(0xFF34A853)},
-    {'name': 'Health', 'icon': Icons.favorite_outline, 'color': widget.categoryColors['Health'] ?? const Color(0xFFEA4335)},
-    {'name': 'Social', 'icon': Icons.people_outline, 'color': widget.categoryColors['Social'] ?? const Color(0xFF9334E6)},
-    {'name': 'Shopping', 'icon': Icons.shopping_cart_outlined, 'color': widget.categoryColors['Shopping'] ?? const Color(0xFFFBBC04)},
-    {'name': 'Other', 'icon': Icons.more_horiz, 'color': const Color(0xFF5F6368)},
-  ];
+  List<Map<String, dynamic>> get _categories {
+    final colors = widget.categoryColors ?? {};
+    return [
+      {'name': 'Work', 'icon': Icons.work_outline, 'color': colors['Work'] ?? const Color(0xFF1A73E8)},
+      {'name': 'Personal', 'icon': Icons.person_outline, 'color': colors['Personal'] ?? const Color(0xFF34A853)},
+      {'name': 'Health', 'icon': Icons.favorite_outline, 'color': colors['Health'] ?? const Color(0xFFEA4335)},
+      {'name': 'Social', 'icon': Icons.people_outline, 'color': colors['Social'] ?? const Color(0xFF9334E6)},
+      {'name': 'Shopping', 'icon': Icons.shopping_cart_outlined, 'color': colors['Shopping'] ?? const Color(0xFFFBBC04)},
+      {'name': 'Other', 'icon': Icons.more_horiz, 'color': const Color(0xFF5F6368)},
+    ];
+  }
 
   @override
   void initState() {
@@ -78,7 +81,7 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
       reminderEnabled: _reminderEnabled,
       userId: 'demo-user',
     );
-    widget.onEventAdded(event);
+    widget.onEventAdded?.call(event);
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -191,7 +194,7 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.notifications_active_outlined, color: widget.categoryColors['Work'] ?? const Color(0xFF1A73E8)),
+                        Icon(Icons.notifications_active_outlined, color: (widget.categoryColors ?? {})['Work'] ?? const Color(0xFF1A73E8)),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -205,7 +208,7 @@ class _AddEventSheetDemoState extends State<AddEventSheetDemo> with SingleTicker
                         Switch(
                           value: _reminderEnabled,
                           onChanged: (v) => setState(() => _reminderEnabled = v),
-                          activeColor: widget.categoryColors['Work'] ?? const Color(0xFF1A73E8),
+                          activeColor: (widget.categoryColors ?? {})['Work'] ?? const Color(0xFF1A73E8),
                         ),
                       ],
                     ),

@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../providers/event_provider.dart';
 import '../models/event.dart';
 
 class TimeReportScreen extends StatelessWidget {
-  final List<Event> events;
+  final List<Event>? events;
   
-  const TimeReportScreen({super.key, required this.events});
+  const TimeReportScreen({super.key, this.events});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final eventProvider = context.watch<EventProvider>();
+    final eventList = eventProvider.events;
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekEvents = events.where((e) => e.dateTime.isAfter(weekStart)).toList();
+    final weekEvents = eventList.where((e) => e.dateTime.isAfter(weekStart)).toList();
     
     final categoryCount = <String, int>{};
     for (final e in weekEvents) {

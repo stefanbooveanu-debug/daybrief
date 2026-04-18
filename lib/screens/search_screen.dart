@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../providers/event_provider.dart';
 import '../models/event.dart';
-import '../widgets/event_card.dart';
 
 class SearchScreen extends StatefulWidget {
-  final List<Event> events;
-  final Function(Event) onEventTap;
+  final Function(Event)? onEventTap;
 
-  const SearchScreen({
-    super.key,
-    required this.events,
-    required this.onEventTap,
-  });
+  const SearchScreen({super.key, this.onEventTap});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -22,13 +18,20 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Event> _filteredEvents = [];
   String _selectedFilter = 'All';
   bool _showResults = false;
+  List<Event> _allEvents = [];
 
   final List<String> _filters = ['All', 'Today', 'This Week', 'This Month', 'Upcoming'];
 
   @override
   void initState() {
     super.initState();
-    _filteredEvents = widget.events;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final eventProvider = context.read<EventProvider>();
+      setState(() {
+        _allEvents = eventProvider.events;
+        _filteredEvents = _allEvents;
+      });
+    });
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -51,7 +54,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final endOfMonth = DateTime(now.year, now.month + 1, 0);
 
     setState(() {
-      _filteredEvents = widget.events.where((event) {
+      _filteredEvents = _allEvents.where((event) {
         final matchesQuery = query.isEmpty || 
             event.title.toLowerCase().contains(query) ||
             (event.description?.toLowerCase().contains(query) ?? false);
@@ -181,7 +184,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
-                                widget.onEventTap(event);
+                                widget.onEventTap?.call(event);
                               },
                               borderRadius: BorderRadius.circular(16),
                               child: Container(

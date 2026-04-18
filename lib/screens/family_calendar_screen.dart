@@ -3,9 +3,9 @@ import 'package:intl/intl.dart';
 import '../models/event.dart';
 
 class FamilyCalendarScreen extends StatefulWidget {
-  final Function(Event) onAddEvent;
+  final Function(Event)? onAddEvent;
   
-  const FamilyCalendarScreen({super.key, required this.onAddEvent});
+  const FamilyCalendarScreen({super.key, this.onAddEvent});
 
   @override
   State<FamilyCalendarScreen> createState() => _FamilyCalendarScreenState();
