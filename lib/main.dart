@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'providers/auth_provider.dart';
 import 'providers/event_provider.dart';
+import 'providers/voice_provider.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('ro_RO', null);
-  Intl.defaultLocale = 'ro_RO';
+  try {
+    await initializeDateFormatting('ro_RO', null);
+  } catch (e) {
+    // fallback if locale not available
+  }
+  try {
+    await initializeDateFormatting('en_US', null);
+  } catch (e) {
+    // fallback
+  }
   runApp(const DayBriefApp());
 }
 
@@ -85,6 +94,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
+        ChangeNotifierProvider(create: (_) => VoiceProvider()),
       ],
       child: Builder(
         builder: (context) {

@@ -79,16 +79,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             'Appearance',
             [
-              _buildSwitchTile(
+_buildSwitchTile(
                 'Dark Mode',
                 'Save battery & easy on eyes',
-                Icons.dark_mode_outlined,
                 _isDarkMode,
                 (value) {
                   setState(() => _isDarkMode = value);
                   widget.onThemeChanged?.call(value);
                 },
-                isDark: isDark,
+                Icons.dark_mode_outlined,
+                isDark,
               ),
             ],
             isDark: isDark,
