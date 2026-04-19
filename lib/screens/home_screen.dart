@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _headerController;
   late Animation<double> _headerFade;
 
-  final List<String> _viewLabels = ['Zi', 'Săptămână', 'Lună'];
+  final List<String> _viewLabels = ['Day', 'Week', 'Month'];
 
   @override
   void initState() {
@@ -158,13 +158,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildHeader(bool isDark, Color textColor, Color cardColor) {
     final authProvider = context.watch<AuthProvider>();
-    final userName = authProvider.userName ?? 'Utilizator';
+    final userName = authProvider.userName ?? 'User';
     final hour = DateTime.now().hour;
     final greeting = hour < 12
-        ? 'Bună dimineața'
+        ? 'Good morning'
         : hour < 18
-            ? 'Bună ziua'
-            : 'Bună seara';
+            ? 'Good afternoon'
+            : 'Good evening';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -218,12 +218,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(width: 8),
           _buildHeaderButton(
             icon: Icons.settings_rounded,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => SettingsScreen(
-                  categoryColors: widget.categoryColors ?? {},
-                  onThemeChanged: widget.onThemeChanged,
-                  onColorsChanged: widget.onCategoryColorsChanged,
-                ))),
+            onTap: () async {
+              final result = await Navigator.push<Map<String, dynamic>>(context,
+                  MaterialPageRoute(builder: (_) => SettingsScreen(
+                    categoryColors: widget.categoryColors ?? {},
+                    onThemeChanged: widget.onThemeChanged,
+                    onColorsChanged: widget.onCategoryColorsChanged,
+                  )));
+              if (result != null && mounted) {
+                // Update colors if changed
+                if (result['categoryColors'] != null) {
+                  final newColors = Map<String, Color>.from(result['categoryColors'] as Map);
+                  widget.onCategoryColorsChanged?.call(newColors);
+                }
+                // Theme change is handled via callback in main.dart
+              }
+            },
             isDark: isDark,
           ),
         ],
@@ -349,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               children: [
                 Text(
-                  DateFormat('EEEE', 'ro_RO').format(_selectedDay),
+                  DateFormat('EEEE', 'en_US').format(_selectedDay),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
@@ -360,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Text(
-                      DateFormat('d MMMM yyyy', 'ro_RO').format(_selectedDay),
+                      DateFormat('MMMM d, yyyy', 'en_US').format(_selectedDay),
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -377,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Text(
-                          'Azi',
+                          'Today',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11,

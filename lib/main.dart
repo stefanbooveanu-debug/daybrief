@@ -11,11 +11,6 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await initializeDateFormatting('ro_RO', null);
-  } catch (e) {
-    // fallback if locale not available
-  }
-  try {
     await initializeDateFormatting('en_US', null);
   } catch (e) {
     // fallback

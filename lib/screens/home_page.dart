@@ -141,16 +141,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   String get _greeting {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Bună dimineața';
-    if (hour < 18) return 'Bună ziua';
-    return 'Bună seara';
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   }
 
   String get _userName {
     if (widget.isDemo) return 'Demo';
     final user = _auth.currentUser;
     if (user?.displayName != null) return user!.displayName!.split(' ')[0];
-    return user?.email?.split('@')[0] ?? 'Utilizator';
+    return user?.email?.split('@')[0] ?? 'User';
   }
 
   @override

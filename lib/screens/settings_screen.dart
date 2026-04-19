@@ -63,7 +63,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF5F6368)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            // Return the current values to parent
+            Navigator.pop(context, {
+              'isDarkMode': _isDarkMode,
+              'categoryColors': _categoryColors,
+            });
+          },
         ),
         title: Text(
           'Settings',
@@ -82,13 +88,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 _buildSwitchTile(
                 'Dark Mode',
                 'Save battery & easy on eyes',
+                Icons.dark_mode_outlined,
                 _isDarkMode,
                 (value) {
                   setState(() => _isDarkMode = value);
                   widget.onThemeChanged?.call(value);
                 },
-                Icons.dark_mode_outlined,
-                isDark,
+                isDark: isDark,
               ),
             ],
             isDark: isDark,

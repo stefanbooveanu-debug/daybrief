@@ -135,7 +135,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   // citim evenimentele de azi
   void _speakEvents() {
     if (_todayEvents.isEmpty) {
-      _speak('Nu ai niciun eveniment astăzi. Zi liberă!');
+      _speak('You have no events today. Have a great day!');
       setState(() => _statusText = 'Niciun eveniment azi');
     } else {
       final count = _todayEvents.length;

@@ -4,13 +4,15 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticated = false;
+  bool _isDemoMode = false;
   String? _userEmail;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAuthenticated => _isAuthenticated;
-  String? get userId => _userEmail;
-  String? get userName => _userEmail?.split('@').first;
+  bool get isAuthenticated => _isAuthenticated || _isDemoMode;
+  bool get isDemoMode => _isDemoMode;
+  String? get userId => _userEmail ?? 'demo_user';
+  String? get userName => _isDemoMode ? 'Demo User' : _userEmail?.split('@').first;
 
   Future<bool> signUp(String email, String password, String name, String surname) async {
     _isLoading = true;
@@ -63,7 +65,14 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     _isAuthenticated = false;
+    _isDemoMode = false;
     _userEmail = null;
+    notifyListeners();
+  }
+
+  Future<void> signInDemo() async {
+    _isDemoMode = true;
+    _userEmail = 'demo@example.com';
     notifyListeners();
   }
 
