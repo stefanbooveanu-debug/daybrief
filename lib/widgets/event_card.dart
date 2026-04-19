@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/event.dart';
+import '../utils/date_utils.dart' as app_date_utils;
 
 class EventCard extends StatelessWidget {
+  static final _cachedTimeFormat = app_date_utils.DateUtils.timeFormat;
+  static final _cachedDateFormat = app_date_utils.DateUtils.dateFullFormat;
+  
   final Event event;
   final VoidCallback onDelete;
   final VoidCallback? onDuplicate;
@@ -85,7 +88,6 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeFormat = DateFormat('h:mm a');
     final color = _getEventColor();
     final isUpcoming = _isUpcoming();
 
@@ -225,7 +227,7 @@ class EventCard extends StatelessWidget {
                                 Icon(Icons.access_time, size: 12, color: color),
                                 const SizedBox(width: 4),
                                 Text(
-                                  timeFormat.format(event.dateTime),
+                                  _cachedTimeFormat.format(event.dateTime),
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -319,7 +321,7 @@ class EventCard extends StatelessWidget {
                           Icon(Icons.calendar_today, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                           const SizedBox(width: 4),
                           Text(
-                            DateFormat('EEEE, MMMM d, yyyy').format(event.dateTime),
+                            _cachedDateFormat.format(event.dateTime),
                             style: TextStyle(
                               color: isDark ? Colors.grey[400] : Colors.grey[600],
                             ),
@@ -332,7 +334,7 @@ class EventCard extends StatelessWidget {
                           Icon(Icons.access_time, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                           const SizedBox(width: 4),
                           Text(
-                            DateFormat('h:mm a').format(event.dateTime),
+                            _cachedTimeFormat.format(event.dateTime),
                             style: TextStyle(
                               color: _getEventColor(),
                               fontWeight: FontWeight.bold,

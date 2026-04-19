@@ -429,10 +429,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           itemCount: events.length,
+          cacheExtent: 200,
           itemBuilder: (context, index) {
             return EventCard(
               event: events[index],
               isDark: isDark,
+              categoryColors: widget.categoryColors ?? {},
               onDelete: () => context
                   .read<EventProvider>()
                   .deleteEvent(events[index].id),
