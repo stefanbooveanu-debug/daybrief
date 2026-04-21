@@ -1,141 +1,106 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
-  static Database? _database;
+  static const String _eventsKey = 'daybrief_events';
 
   factory DatabaseService() => _instance;
-
   DatabaseService._internal();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+  // In-memory cache
+  List<Event> _events = [];
+  bool _loaded = false;
+
+  Future<void> _ensureLoaded() async {
+    if (_loaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_eventsKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        _events = list.map((m) => Event.fromMap(Map<String, dynamic>.from(m))).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading events: $e');
+      _events = [];
+    }
+    _loaded = true;
   }
 
-  Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'daybrief.db');
-
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-    );
-  }
-
-  Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE events (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        dateTime TEXT NOT NULL,
-        description TEXT,
-        category TEXT,
-        reminderEnabled INTEGER DEFAULT 1,
-        isCompleted INTEGER DEFAULT 0,
-        userId TEXT NOT NULL,
-        calendarName TEXT DEFAULT 'Personal'
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE family_events (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        dateTime TEXT NOT NULL,
-        description TEXT,
-        category TEXT,
-        memberId TEXT NOT NULL,
-        memberName TEXT NOT NULL
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE poll_options (
-        id TEXT PRIMARY KEY,
-        pollTitle TEXT NOT NULL,
-        time TEXT NOT NULL,
-        votes INTEGER DEFAULT 0,
-        voters TEXT
-      )
-    ''');
+  Future<void> _save() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = jsonEncode(_events.map((e) => e.toMap()).toList());
+      await prefs.setString(_eventsKey, jsonStr);
+    } catch (e) {
+      debugPrint('Error saving events: $e');
+    }
   }
 
   Future<int> insertEvent(Event event) async {
-    final db = await database;
-    return await db.insert(
-      'events',
-      event.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _ensureLoaded();
+    // Remove existing with same ID (replace)
+    _events.removeWhere((e) => e.id == event.id);
+    _events.add(event);
+    await _save();
+    return 1;
   }
 
   Future<List<Event>> getAllEvents() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'events',
-      orderBy: 'dateTime ASC',
-    );
-    return List.generate(maps.length, (i) => Event.fromMap(maps[i]));
+    await _ensureLoaded();
+    final sorted = List<Event>.from(_events)
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return sorted;
   }
 
   Future<List<Event>> getEventsForDay(DateTime day) async {
-    final db = await database;
-    final startOfDay = DateTime(day.year, day.month, day.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-    
-    final List<Map<String, dynamic>> maps = await db.query(
-      'events',
-      where: 'dateTime >= ? AND dateTime < ?',
-      whereArgs: [startOfDay.toIso8601String(), endOfDay.toIso8601String()],
-      orderBy: 'dateTime ASC',
-    );
-    return List.generate(maps.length, (i) => Event.fromMap(maps[i]));
+    await _ensureLoaded();
+    return _events.where((e) =>
+      e.dateTime.year == day.year &&
+      e.dateTime.month == day.month &&
+      e.dateTime.day == day.day
+    ).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
   Future<List<Event>> getUpcomingEvents() async {
-    final db = await database;
+    await _ensureLoaded();
     final now = DateTime.now();
-    final List<Map<String, dynamic>> maps = await db.query(
-      'events',
-      where: 'dateTime > ?',
-      whereArgs: [now.toIso8601String()],
-      orderBy: 'dateTime ASC',
-    );
-    return List.generate(maps.length, (i) => Event.fromMap(maps[i]));
+    return _events.where((e) => e.dateTime.isAfter(now)).toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
   Future<int> updateEvent(Event event) async {
-    final db = await database;
-    return await db.update(
-      'events',
-      event.toMap(),
-      where: 'id = ?',
-      whereArgs: [event.id],
-    );
+    await _ensureLoaded();
+    final idx = _events.indexWhere((e) => e.id == event.id);
+    if (idx >= 0) {
+      _events[idx] = event;
+      await _save();
+      return 1;
+    }
+    return 0;
   }
 
   Future<int> deleteEvent(String eventId) async {
-    final db = await database;
-    return await db.delete(
-      'events',
-      where: 'id = ?',
-      whereArgs: [eventId],
-    );
+    await _ensureLoaded();
+    final before = _events.length;
+    _events.removeWhere((e) => e.id == eventId);
+    await _save();
+    return before - _events.length;
   }
 
   Future<int> deleteAllEvents() async {
-    final db = await database;
-    return await db.delete('events');
+    await _ensureLoaded();
+    final count = _events.length;
+    _events.clear();
+    await _save();
+    return count;
   }
 
   Future<void> close() async {
-    final db = await database;
-    await db.close();
-    _database = null;
+    _events.clear();
+    _loaded = false;
   }
 }

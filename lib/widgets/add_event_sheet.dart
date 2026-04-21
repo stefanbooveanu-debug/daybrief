@@ -169,15 +169,21 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF2A1A0A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF202124);
+    final subtextColor = isDark ? Colors.grey[400]! : const Color(0xFF5F6368);
+    final fieldBg = isDark ? const Color(0xFF1A0E00) : const Color(0xFFFAFAFA);
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: Form(
           key: _formKey,
@@ -188,16 +194,16 @@ class _AddEventSheetState extends State<AddEventSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'New Event',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF202124),
+                      color: textColor,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xFF5F6368)),
+                    icon: Icon(Icons.close, color: subtextColor),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -235,17 +241,25 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: _aiInputController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            decoration: const InputDecoration(
-                              hintText: '"Meeting tomorrow at 3pm"',
-                              hintStyle: TextStyle(color: Colors.white70, fontSize: 13),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            onSubmitted: (_) => _parseWithAI(),
+                            child: TextField(
+                              controller: _aiInputController,
+                              cursorColor: Colors.white,
+                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                              decoration: const InputDecoration(
+                                hintText: '"Meeting tomorrow at 3pm"',
+                                hintStyle: TextStyle(color: Colors.white70, fontSize: 13),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onSubmitted: (_) => _parseWithAI(),
+                            ),
                           ),
                         ),
                         IconButton(
