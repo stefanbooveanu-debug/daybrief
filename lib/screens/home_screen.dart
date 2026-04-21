@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
+import '../services/claude_service.dart';
 import '../widgets/add_event_sheet.dart';
 import '../widgets/event_card.dart';
 import '../widgets/voice_assistant_button.dart';
@@ -103,6 +104,90 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  Future<void> _showAISummary() async {
+    final events = context.read<EventProvider>().getEventsForDay(_selectedDay);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: isDark ? const Color(0xFF2A1A0A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9334E6), Color(0xFF1A73E8)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'AI Daily Summary',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF202124),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              FutureBuilder<String>(
+                future: ClaudeService.generateDailySummary(events),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(color: Color(0xFF9334E6)),
+                            SizedBox(height: 12),
+                            Text('Thinking...', style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return Text(
+                    snapshot.data ?? 'Unable to generate summary',
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: isDark ? Colors.white70 : const Color(0xFF5F6368),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(color: Color(0xFF9334E6), fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _navigateToView(int view) {
     if (view == 1) {
       Navigator.push(context,
@@ -195,6 +280,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
+          _buildHeaderButton(
+            icon: Icons.auto_awesome,
+            onTap: _showAISummary,
+            isDark: isDark,
+            color: const Color(0xFF9334E6),
+          ),
+          const SizedBox(width: 8),
           _buildHeaderButton(
             icon: Icons.directions_car_rounded,
             onTap: () => Navigator.push(context,

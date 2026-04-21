@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/event_provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/claude_service.dart';
 import '../models/event.dart';
 
 class AddEventSheet extends StatefulWidget {
@@ -18,8 +19,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _aiInputController = TextEditingController();
   late TimeOfDay _selectedTime;
   late DateTime _selectedDate;
+  bool _aiLoading = false;
 
   @override
   void initState() {
@@ -32,7 +35,52 @@ class _AddEventSheetState extends State<AddEventSheet> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _aiInputController.dispose();
     super.dispose();
+  }
+
+  Future<void> _parseWithAI() async {
+    final text = _aiInputController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() => _aiLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final event = await ClaudeService.parseEventFromText(
+      text,
+      authProvider.userId ?? '',
+    );
+
+    if (!mounted) return;
+    setState(() => _aiLoading = false);
+
+    if (event == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not parse. Try: "Meeting tomorrow at 3pm"'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Auto-fill the form with parsed data
+    setState(() {
+      _titleController.text = event.title;
+      if (event.description != null) _descriptionController.text = event.description!;
+      _selectedDate = event.dateTime;
+      _selectedTime = TimeOfDay.fromDateTime(event.dateTime);
+      _aiInputController.clear();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✨ AI parsed: "${event.title}"'),
+        backgroundColor: const Color(0xFF9334E6),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _selectTime() async {
@@ -154,7 +202,73 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              // AI Input Section
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9334E6), Color(0xFF1A73E8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'AI Quick Add',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _aiInputController,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: const InputDecoration(
+                              hintText: '"Meeting tomorrow at 3pm"',
+                              hintStyle: TextStyle(color: Colors.white70, fontSize: 13),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            onSubmitted: (_) => _parseWithAI(),
+                          ),
+                        ),
+                        IconButton(
+                          icon: _aiLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.send, color: Colors.white, size: 20),
+                          onPressed: _aiLoading ? null : _parseWithAI,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
