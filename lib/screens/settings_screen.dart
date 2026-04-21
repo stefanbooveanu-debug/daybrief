@@ -91,8 +91,12 @@ _buildSwitchTile(
                 Icons.dark_mode_outlined,
                 _isDarkMode,
                 (value) {
+                  // Update switch state immediately for smooth animation
                   setState(() => _isDarkMode = value);
-                  widget.onThemeChanged?.call(value);
+                  // Delay theme change so switch animation completes first
+                  Future.delayed(const Duration(milliseconds: 250), () {
+                    widget.onThemeChanged?.call(value);
+                  });
                 },
                 isDark: isDark,
               ),
