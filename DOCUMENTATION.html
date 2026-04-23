@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayBrief - Documentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #f5f5f7;
+    padding: 20px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .header {
+    background: linear-gradient(135deg, #9334E6 0%, #1A73E8 100%);
+    color: white;
+    padding: 40px;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 36px;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .header .tagline {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 16px;
+  }
+  .header .repo {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    backdrop-filter: blur(10px);
+  }
+  .header a { color: white; text-decoration: none; }
+  .content { padding: 40px; }
+  h2 {
+    font-size: 24px;
+    color: #1a1a1a;
+    margin: 32px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+  h2:first-child { margin-top: 0; }
+  h3 {
+    font-size: 18px;
+    color: #333;
+    margin: 20px 0 10px 0;
+  }
+  h4 {
+    font-size: 15px;
+    color: #555;
+    margin: 12px 0 6px 0;
+  }
+  p { margin-bottom: 12px; color: #444; }
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; color: #444; }
+  code {
+    background: #f5f5f7;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    font-size: 13px;
+    color: #d63384;
+  }
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+  }
+  .toc {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  .toc ol { margin-left: 20px; }
+  .toc a { color: #1A73E8; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .feature-card {
+    background: #f8f9fa;
+    padding: 14px;
+    border-radius: 8px;
+    border-left: 3px solid #1A73E8;
+  }
+  .feature-card.ai { border-left-color: #9334E6; }
+  .feature-card.voice { border-left-color: #FF8C69; }
+  .commit {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+    border-left: 4px solid #34A853;
+  }
+  .commit-hash {
+    font-family: monospace;
+    background: #1a1a1a;
+    color: #34A853;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .commit-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin: 6px 0;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .badge.new { background: #34A85320; color: #34A853; }
+  .badge.fix { background: #EA433520; color: #EA4335; }
+  .badge.perf { background: #FBBC0420; color: #B8860B; }
+  .badge.ai { background: #9334E620; color: #9334E6; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #666;
+  }
+  .footer {
+    text-align: center;
+    padding: 30px;
+    color: #999;
+    font-size: 13px;
+    border-top: 1px solid #f0f0f0;
+  }
+  @media print {
+    body { background: white; padding: 0; }
+    .container { box-shadow: none; border-radius: 0; }
+    .header { page-break-after: avoid; }
+    h2 { page-break-after: avoid; }
+    .commit { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>DayBrief</h1>
+  <div class="tagline">Voice-activated calendar & schedule assistant built with Flutter</div>
+  <div class="repo">
+    <a href="https://github.com/stefanbooveanu-debug/daybrief.git">
+      github.com/stefanbooveanu-debug/daybrief
+    </a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="toc">
+  <h3 style="margin-top:0">Table of Contents</h3>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#history">Development History</a></li>
+    <li><a href="#changelog">Session Changelog</a></li>
+    <li><a href="#setup">Setup & Installation</a></li>
+    <li><a href="#config">Configuration</a></li>
+    <li><a href="#future">Future Work</a></li>
+  </ol>
+</div>
+
+<h2 id="overview">1. Overview</h2>
+<p>DayBrief is a Flutter-based calendar/schedule application with voice assistance, AI-powered event parsing, and multiple calendar views. The app supports web, desktop, and mobile platforms.</p>
+
+<h3>Tech Stack</h3>
+<table>
+  <tr><th>Component</th><th>Technology</th></tr>
+  <tr><td>Framework</td><td>Flutter (Dart)</td></tr>
+  <tr><td>State Management</td><td>Provider</td></tr>
+  <tr><td>Storage</td><td>SharedPreferences (web-compatible)</td></tr>
+  <tr><td>AI</td><td>Anthropic Claude API (claude-3-5-sonnet)</td></tr>
+  <tr><td>Voice</td><td>speech_to_text, flutter_tts</td></tr>
+  <tr><td>Auth</td><td>Firebase Auth (+ Demo mode)</td></tr>
+  <tr><td>Calendar Sync</td><td>Google Calendar API</td></tr>
+</table>
+
+<h2 id="features">2. Features</h2>
+
+<h3>Core Features</h3>
+<div class="feature-grid">
+  <div class="feature-card"><strong>Multiple Views</strong><br>Day / Week / Month</div>
+  <div class="feature-card"><strong>Event Management</strong><br>Add, edit, delete, complete</div>
+  <div class="feature-card"><strong>Categories</strong><br>Work, Personal, Health, Social, Shopping</div>
+  <div class="feature-card"><strong>Search</strong><br>Full-text across events</div>
+  <div class="feature-card"><strong>Dark Mode</strong><br>Smooth theme transitions</div>
+  <div class="feature-card"><strong>English Interface</strong><br>Full translation</div>
+</div>
+
+<h3>Advanced Features</h3>
+<div class="feature-grid">
+  <div class="feature-card ai"><strong>AI Quick Add</strong><br>"Meeting tomorrow at 3pm" → Event</div>
+  <div class="feature-card ai"><strong>AI Daily Summary</strong><br>Smart briefing of your day</div>
+  <div class="feature-card voice"><strong>Voice Assistant</strong><br>Voice commands & TTS</div>
+  <div class="feature-card voice"><strong>Driving Mode</strong><br>Voice-only safe mode</div>
+  <div class="feature-card"><strong>Demo Mode</strong><br>No-signup access</div>
+  <div class="feature-card"><strong>Calendar Sync</strong><br>Google Calendar import/export</div>
+  <div class="feature-card"><strong>Family Calendar</strong><br>Shared family events</div>
+  <div class="feature-card"><strong>Quick Poll</strong><br>Find best meeting time</div>
+  <div class="feature-card voice"><strong>Voice Templates</strong><br>Custom voice commands</div>
+  <div class="feature-card"><strong>Share Calendar</strong><br>iCal export</div>
+  <div class="feature-card"><strong>Time Reports</strong><br>Weekly analysis by category</div>
+  <div class="feature-card"><strong>Smart Reminders</strong><br>Notify 1h before events</div>
+  <div class="feature-card"><strong>Recurring Events</strong><br>Daily/weekly/monthly/yearly</div>
+</div>
+
+<h2 id="architecture">3. Architecture</h2>
+
+<h3>Directory Structure</h3>
+<pre><code>lib/
+├── config/
+│   └── app_config.dart          # API keys (gitignored)
+├── models/
+│   ├── event.dart               # Event data model
+│   └── voice_template.dart
+├── providers/
+│   ├── auth_provider.dart       # Authentication state
+│   ├── event_provider.dart      # Events state
+│   ├── voice_provider.dart      # Voice assistant state
+│   └── voice_template_provider.dart
+├── screens/
+│   ├── auth_screen.dart         # Login/Signup (with Demo Mode)
+│   ├── home_screen.dart         # Main day view
+│   ├── week_view_screen.dart
+│   ├── month_view_screen.dart
+│   ├── settings_screen.dart
+│   ├── search_screen.dart
+│   ├── driving_mode_screen.dart
+│   ├── time_report_screen.dart
+│   ├── family_calendar_screen.dart
+│   ├── share_calendar_screen.dart
+│   ├── quick_poll_screen.dart
+│   ├── calendar_sync_screen.dart
+│   └── voice_templates_screen.dart
+├── services/
+│   ├── claude_service.dart      # Claude AI integration
+│   ├── database_service.dart    # Storage (SharedPreferences)
+│   ├── speech_service.dart      # STT
+│   ├── voice_command_service.dart
+│   ├── google_calendar_service.dart
+│   └── firebase_service.dart
+├── utils/
+│   └── date_utils.dart          # Cached DateFormatters
+├── widgets/
+│   ├── add_event_sheet.dart     # Event creation (with AI)
+│   ├── event_card.dart
+│   ├── voice_assistant_button.dart
+│   └── animated_theme.dart
+├── theme/
+│   └── app_theme.dart
+└── main.dart                     # App entry point</code></pre>
+
+<h3>State Management</h3>
+<ul>
+  <li><code>AuthProvider</code> - User authentication and demo mode</li>
+  <li><code>EventProvider</code> - Event CRUD operations with in-memory cache</li>
+  <li><code>VoiceProvider</code> - Voice assistant state (listening/speaking)</li>
+  <li><code>VoiceTemplateProvider</code> - Custom voice command templates</li>
+</ul>
+
+<h2 id="history">4. Development History</h2>
+
+<h3>Phase 1: Foundation</h3>
+<p>Set up Flutter project structure, voice-activated calendar base, Firebase configuration, basic web setup.</p>
+
+<h3>Phase 2: UI Overhaul</h3>
+<p>Google Calendar-style UI, dark mode support, category color system, month/week views, search functionality, smooth animations.</p>
+
+<h3>Phase 3: Feature Expansion</h3>
+<p>Voice assistant with natural TTS, smart reminders, mark complete with strikethrough, persistent category colors, glassmorphism auth UI, unit tests.</p>
+
+<h3>Phase 4: Advanced Features</h3>
+<p>Recurring events, location + Maps integration, event editing, calendar sync with Google Calendar, event sharing (iCal), copy to clipboard.</p>
+
+<h3>Phase 5: Backend Integration</h3>
+<p>Firebase Auth with real credentials, Firestore for events, Google Calendar API service, multiple calendars (Work/Personal/Family), voice templates.</p>
+
+<h3>Phase 6: Persistence & Platforms</h3>
+<p>SQLite for offline-first storage, TTS web compatibility, driving mode (voice-only).</p>
+
+<h3>Phase 7: Refactor & Polish (Recent)</h3>
+<p>Fixed compilation errors, API alignment between screens/providers, locale initialization for date formatting, theme toggle fixes.</p>
+
+<h2 id="changelog">5. Session Changelog</h2>
+<p>Most recent commits (newest first):</p>
+
+<div class="commit">
+  <span class="commit-hash">6e8e3c5</span>
+  <span class="badge fix">FIX</span>
+  <div class="commit-title">Smooth dark mode toggle</div>
+  <p>Delayed theme change 250ms so the Switch animation completes before the entire app rebuilds. Result: smoother toggle.</p>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">edd1598</span>
+  <span class="badge fix">FIX</span>
+  <span class="badge new">NEW</span>
+  <div class="commit-title">AI input visibility + web storage</div>
+  <ul>
+    <li>Added semi-transparent background to AI input field (was white text on white)</li>
+    <li>Full dark mode support for AddEventSheet</li>
+    <li><strong>Replaced SQLite with SharedPreferences</strong> (SQLite doesn't work on web browsers)</li>
+    <li>Events now persist properly across sessions</li>
+  </ul>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">950fc85</span>
+  <span class="badge ai">AI</span>
+  <span class="badge new">NEW</span>
+  <div class="commit-title">Claude AI Integration</div>
+  <ul>
+    <li>Created <code>lib/services/claude_service.dart</code> - Claude AI API client</li>
+    <li><strong>AI Quick Add</strong> in event sheet (purple gradient box) — parses natural language: <em>"Meeting tomorrow at 3pm"</em> → Event</li>
+    <li><strong>AI Daily Summary</strong> button (sparkle icon in header) — generates friendly daily briefing</li>
+    <li>Methods: <code>parseEventFromText()</code>, <code>generateDailySummary()</code>, <code>answerQuestion()</code>, <code>getSmartSuggestions()</code></li>
+    <li>API keys gitignored in <code>lib/config/app_config.dart</code></li>
+  </ul>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">ae4ceaa</span>
+  <span class="badge perf">PERF</span>
+  <div class="commit-title">Performance optimizations</div>
+  <ul>
+    <li>Created <code>lib/utils/date_utils.dart</code> — centralized cached DateFormat instances</li>
+    <li>Added <code>cacheExtent: 200</code> to ListView.builder for smoother scrolling</li>
+    <li>EventCard uses static cached formatters to avoid recreation on every build</li>
+  </ul>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">d2d4024</span>
+  <span class="badge new">NEW</span>
+  <div class="commit-title">Language change + Demo Mode</div>
+  <ul>
+    <li>Translated entire UI from Romanian to English
+      <ul>
+        <li>"Zi/Săptămână/Lună" → "Day/Week/Month"</li>
+        <li>"Bună dimineața" → "Good morning"</li>
+        <li>"Azi" → "Today"</li>
+        <li>"Utilizator" → "User"</li>
+      </ul>
+    </li>
+    <li><strong>Demo Mode</strong> button added to auth screen — one-click access without signup</li>
+    <li>New <code>signInDemo()</code> method in AuthProvider, <code>isDemoMode</code> flag</li>
+  </ul>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">fc0b3b0</span>
+  <span class="badge fix">FIX</span>
+  <div class="commit-title">Theme toggle fix + locale fallbacks</div>
+  <p>Theme toggle now actually persists after navigating back. Added multiple locale fallbacks.</p>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">da8cc20</span>
+  <span class="badge fix">FIX</span>
+  <div class="commit-title">Locale initialization</div>
+  <p>Fixed <code>LocaleDataException</code> by initializing <code>date_symbol_data_local</code>. Added <code>initializeDateFormatting('ro_RO')</code> in main.</p>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">4365099</span>
+  <span class="badge fix">FIX</span>
+  <div class="commit-title">Compilation fixes (Major API alignment)</div>
+  <ul>
+    <li>HomeScreen: Added optional constructor params (<code>categoryColors</code>, <code>onCategoryColorsChanged</code>, <code>onThemeChanged</code>)</li>
+    <li>Fixed method names: <code>getEventsForDate()</code> → <code>getEventsForDay()</code></li>
+    <li>Fixed method names: <code>loadEvents()</code> → <code>refreshEvents()</code></li>
+    <li>Changed <code>AnimatedThemeWrapper</code> → <code>SmoothThemeTransition</code></li>
+    <li>Fixed <code>AddEventSheet</code> parameter: <code>selectedDate:</code> → <code>initialDate:</code></li>
+    <li>Made various screens' params optional</li>
+    <li>Added missing packages: <code>url_launcher</code>, <code>google_sign_in</code>, <code>http</code>, <code>file_picker</code>, <code>share_plus</code></li>
+    <li>Fixed Event model with <code>location</code> and <code>RecurrenceType</code></li>
+  </ul>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">400f52f</span>
+  <span class="badge new">NEW</span>
+  <div class="commit-title">DrivingModeScreen</div>
+  <p>Added voice-only safe mode for driving. Accessible from settings.</p>
+</div>
+
+<div class="commit">
+  <span class="commit-hash">0de1e5a</span>
+  <span class="badge fix">FIX</span>
+  <div class="commit-title">Theme initState fix</div>
+  <p>Moved <code>Theme.of(context)</code> from <code>initState</code> to <code>didChangeDependencies</code>.</p>
+</div>
+
+<h2 id="setup">6. Setup & Installation</h2>
+
+<h3>Prerequisites</h3>
+<ul>
+  <li>Flutter SDK (3.x+)</li>
+  <li>Dart SDK</li>
+  <li>Chrome (for web), or Android/iOS emulator</li>
+</ul>
+
+<h3>Install Dependencies</h3>
+<pre><code>cd daybrief
+flutter pub get</code></pre>
+
+<h3>Run the App</h3>
+<h4>Web (Chrome):</h4>
+<pre><code>flutter run -d chrome</code></pre>
+
+<h4>Desktop (Windows):</h4>
+<pre><code>flutter run -d windows</code></pre>
+
+<h4>Mobile:</h4>
+<pre><code>flutter run -d android
+flutter run -d ios</code></pre>
+
+<h3>Build for Production</h3>
+<h4>Web:</h4>
+<pre><code>flutter build web</code></pre>
+
+<h4>Android APK:</h4>
+<pre><code>flutter build apk</code></pre>
+
+<h2 id="config">7. Configuration</h2>
+
+<h3>API Keys</h3>
+<p><strong>⚠️ Important:</strong> The <code>lib/config/app_config.dart</code> file is gitignored. You need to create it locally:</p>
+<pre><code>// lib/config/app_config.dart
+class AppConfig {
+  static const String anthropicApiKey = 'YOUR_CLAUDE_API_KEY';
+  static const String claudeApiUrl = 'https://api.anthropic.com/v1/messages';
+  static const String claudeModel = 'claude-3-5-sonnet-20241022';
+  static const int maxTokens = 1024;
+}</code></pre>
+
+<h3>Firebase (Optional)</h3>
+<p>Configure <code>lib/firebase_options.dart</code> if using Firebase Auth/Firestore.</p>
+
+<h3>Google Calendar (Optional)</h3>
+<p>Uses OAuth2 via <code>google_sign_in</code> package. Set up OAuth credentials in Google Cloud Console.</p>
+
+<h2 id="future">8. Future Work</h2>
+
+<h3>UI/UX</h3>
+<ul>
+  <li>Custom color picker (currently preset colors)</li>
+  <li>Illustrated empty states</li>
+  <li>Pull to refresh</li>
+  <li>Haptic feedback</li>
+</ul>
+
+<h3>AI Features</h3>
+<ul>
+  <li>Smart voice assistant (ask Claude about schedule)</li>
+  <li>Smart suggestions (pattern detection)</li>
+  <li>Calendar conflict resolution</li>
+</ul>
+
+<h3>Integrations</h3>
+<ul>
+  <li>Real Firebase Auth (currently mock)</li>
+  <li>Push notifications</li>
+  <li>Cloud sync across devices</li>
+</ul>
+
+<h3>Known Issues</h3>
+<ul>
+  <li><strong>Web:</strong> SQLite not supported → uses SharedPreferences instead (implemented)</li>
+  <li><code>speech_to_text</code>: <code>cancelOnError</code> deprecation warning (non-blocking)</li>
+</ul>
+
+</div>
+
+<div class="footer">
+  <p><strong>DayBrief Team</strong> · Version 1.0.0</p>
+  <p>Built with Flutter · Powered by Claude AI</p>
+</div>
+
+</div>
+</body>
+</html>
