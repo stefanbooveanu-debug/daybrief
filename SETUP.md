@@ -1,75 +1,145 @@
-# VoiceCal Setup Guide
+# DayBrief - Setup Guide for Another Laptop
 
-## Firebase Setup (Required)
+## Prerequisites
 
-Follow these steps to connect your app to Firebase:
+You need these installed on the other laptop:
 
-### 1. Create a Firebase Project
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project" and name it "VoiceCal"
-3. Disable Google Analytics (optional) and click Create
+1. **Git** - https://git-scm.com/downloads
+2. **Flutter SDK** - https://docs.flutter.dev/get-started/install
+3. **Node.js** (for the server) - https://nodejs.org/
+4. **Chrome browser** (for running the web app)
 
-### 2. Enable Authentication
-1. In your Firebase project, go to **Build > Authentication**
-2. Click "Get started"
-3. Under "Sign-in method", enable **Email/Password**
-4. Save the settings
+---
 
-### 3. Enable Firestore Database
-1. Go to **Build > Firestore Database**
-2. Click "Create database"
-3. Choose "Start in test mode" (for development)
-4. Select a location close to you
-5. Click "Enable"
+## Step 1: Clone the Repository
 
-### 4. Add Android App to Firebase
-1. Go to **Project Settings** (gear icon)
-2. Under "Your apps", click the Android icon
-3. Enter:
-   - Android package name: `com.voiscal.voice_cal`
-   - App nickname: `VoiceCal`
-4. Click "Register app"
-5. Download `google-services.json`
-6. Place it in: `android/app/google-services.json`
+Open a terminal (PowerShell/CMD/Bash) and run:
 
-### 5. For iOS (if building for iOS)
-1. Click the iOS icon in Firebase console
-2. Enter your iOS bundle ID
-3. Download `GoogleService-Info.plist`
-4. Add it to your iOS project via Xcode
-
-## Building the App
-
-### Android
 ```bash
-cd voice_cal
-flutter build apk --debug
+git clone https://github.com/stefanbooveanu-debug/daybrief.git
+cd daybrief
 ```
 
-The APK will be at: `build/app/outputs/flutter-apk/app-debug.apk`
+---
 
-### iOS
+## Step 2: Install Flutter Dependencies
+
 ```bash
-cd voice_cal
-flutter build ios
+flutter pub get
 ```
 
-## Testing the Voice Feature
+This downloads all packages defined in `pubspec.yaml`.
 
-The voice assistant uses "Hey VoiceCal" as the wake word:
-- Say: **"Hey VoiceCal, what do I have today?"**
-- Say: **"Hey VoiceCal, add barber at 3pm"**
+---
 
-## Troubleshooting
+## Step 3: Add the API Key Config (REQUIRED)
 
-### Microphone Permission Denied
-Make sure to grant microphone permission when prompted on Android.
+The Claude AI features need an API key. The config file is gitignored for security.
 
-### Speech Recognition Not Working
-- Ensure internet connection (required for speech recognition)
-- Check device has a microphone
-- Try speaking clearly in English
+Create the file `lib/config/app_config.dart`:
 
-### Firebase Connection Error
-- Verify `google-services.json` is in the correct location
-- Check the package name matches exactly: `com.voiscal.voice_cal`
+```dart
+class AppConfig {
+  static const String anthropicApiKey = 'YOUR_CLAUDE_API_KEY_HERE';
+  static const String claudeApiUrl = 'https://api.anthropic.com/v1/messages';
+  static const String claudeModel = 'claude-3-5-sonnet-20241022';
+  static const int maxTokens = 1024;
+}
+```
+
+Replace `YOUR_CLAUDE_API_KEY_HERE` with your actual Anthropic API key.
+
+> **Note:** Without this file, the app will fail to compile. The Firebase config is already in the repo so Firebase will work automatically.
+
+---
+
+## Step 4: Run the App
+
+### Option A: Development Mode (with hot reload)
+
+```bash
+flutter run -d chrome
+```
+
+The app opens in Chrome and stays up while the terminal is running.
+
+### Option B: Production Build + Server (faster, more stable)
+
+Build once:
+```bash
+flutter build web --release
+```
+
+Then run the server:
+```bash
+node server.js
+```
+
+Open in browser: http://localhost:8080
+
+---
+
+## Step 5: Firebase Console Setup
+
+The Firebase project (`daybrief-d6bf6`) is already configured in the code. Make sure these are enabled in the Firebase Console:
+
+1. Go to https://console.firebase.google.com/project/daybrief-d6bf6
+2. **Authentication** → Sign-in method → Enable "Email/Password"
+3. **Firestore Database** → Make sure rules allow authenticated users to read/write
+
+Example permissive rules (for development only):
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+---
+
+## Common Issues
+
+### "Module not found" when running `node server.js`
+Make sure you're in the `daybrief` folder, not its parent.
+
+### Flutter web not enabled
+Run: `flutter config --enable-web`
+
+### Chrome not found by Flutter
+Make sure Chrome is installed and in your PATH.
+
+### Firebase initialization error
+Check that `lib/firebase_options.dart` exists with the real config (it should be in the repo).
+
+---
+
+## File Locations
+
+- **Source code**: `lib/`
+- **Built web app**: `build/web/` (after `flutter build web`)
+- **Server script**: `server.js` (Node.js, no extra dependencies needed)
+- **API keys**: `lib/config/app_config.dart` (create manually)
+- **Firebase config**: `lib/firebase_options.dart` (already in repo)
+
+---
+
+## Quick Start Commands (All-in-One)
+
+```bash
+# Clone and setup
+git clone https://github.com/stefanbooveanu-debug/daybrief.git
+cd daybrief
+flutter pub get
+
+# Create lib/config/app_config.dart manually with your API key
+
+# Build and run
+flutter build web --release
+node server.js
+```
+
+Then open http://localhost:8080
