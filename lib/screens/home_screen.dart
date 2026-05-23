@@ -280,13 +280,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-          _buildHeaderButton(
-            icon: Icons.auto_awesome,
-            onTap: _showAISummary,
-            isDark: isDark,
-            color: const Color(0xFF9334E6),
-          ),
-          const SizedBox(width: 8),
+          if (ClaudeService.isSupportedOnPlatform) ...[
+            _buildHeaderButton(
+              icon: Icons.auto_awesome,
+              onTap: _showAISummary,
+              isDark: isDark,
+              color: const Color(0xFF9334E6),
+            ),
+            const SizedBox(width: 8),
+          ],
           _buildHeaderButton(
             icon: Icons.directions_car_rounded,
             onTap: () => Navigator.push(context,

@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
     storageBucket: 'daybrief-d6bf6.firebasestorage.app',
-    iosBundleId: 'com.example.dayBrief',
+    iosBundleId: 'com.daybrief.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -61,7 +61,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1033860843007',
     projectId: 'daybrief-d6bf6',
     storageBucket: 'daybrief-d6bf6.firebasestorage.app',
-    iosBundleId: 'com.example.dayBrief',
+    iosBundleId: 'com.daybrief.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

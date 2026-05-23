@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../models/event.dart';
 import '../widgets/event_card.dart';
-import '../widgets/add_event_sheet_demo.dart';
+import '../widgets/add_event_sheet.dart';
 
 class MonthViewScreen extends StatefulWidget {
   final List<Event>? events;
@@ -219,7 +219,14 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                         itemCount: selectedDayEvents.length,
                         itemBuilder: (context, index) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: EventCard(event: selectedDayEvents[index], onDelete: () {}, isDark: isDark),
+                          child: EventCard(
+                            event: selectedDayEvents[index],
+                            isDark: isDark,
+                            categoryColors: widget.categoryColors ?? {},
+                            onDelete: () => context
+                                .read<EventProvider>()
+                                .deleteEvent(selectedDayEvents[index].id),
+                          ),
                         ),
                       ),
                     ),
@@ -234,7 +241,9 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => AddEventSheetDemo(onEventAdded: widget.onAddEvent, categoryColors: widget.categoryColors),
+          builder: (context) => AddEventSheet(
+            initialDate: _selectedDate ?? DateTime.now(),
+          ),
         ),
         backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
         child: const Icon(Icons.add, color: Colors.white),

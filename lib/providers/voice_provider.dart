@@ -69,7 +69,9 @@ class VoiceProvider with ChangeNotifier {
     return _speechService.isWakeWord(text, _wakeWord);
   }
 
+  @override
   void dispose() {
     _speechService.dispose();
+    super.dispose();
   }
 }

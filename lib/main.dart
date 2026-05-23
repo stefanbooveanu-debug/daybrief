@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/event_provider.dart';
 import 'providers/voice_provider.dart';
+import 'providers/voice_template_provider.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -103,6 +104,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => VoiceProvider()),
+        ChangeNotifierProvider(create: (_) => VoiceTemplateProvider()),
       ],
       child: Builder(
         builder: (context) {

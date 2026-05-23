@@ -2,7 +2,39 @@
 
 A concrete 4-phase plan. Every file path is relative to the repo root. Phases are ordered so each one leaves the codebase compiling and runnable.
 
-> **How to use this plan:** Open a fresh Cursor chat in this repo and prompt it with: "Read `docs/REMEDIATION-PLAN.md`, `docs/CODE-REVIEW.md`, and `docs/DECISIONS.md` for full context. Execute Phase 0. After each subsection run `flutter analyze` and commit before moving to the next." Then proceed phase by phase.
+## Session plan (two chats)
+
+| Session | Scope | When |
+|---------|--------|------|
+| **Session 1** | **Phase 0 only** — security, broken CRUD, Firebase rules, bundle IDs | Today (this device) |
+| **Session 2** | **Phases 1–4** — cleanup, architecture, features, tests/docs | When you paste the continuation prompt below |
+
+Phase 0 should be **committed and pushed** before Session 2 so the Mac (or any machine) starts from the same baseline.
+
+### Session 1 — Phase 0 (today)
+
+```
+Read docs/REMEDIATION-PLAN.md, docs/CODE-REVIEW.md, and docs/DECISIONS.md.
+Execute Phase 0 only. After each subsection run flutter analyze.
+When Phase 0 is complete, summarize what changed and remind me to commit and push.
+Do not start Phase 1.
+```
+
+### Session 2 — Phases 1–4 (later)
+
+See **`docs/CONTINUE-PHASES.md`** for the copy-paste prompt. Short version:
+
+```
+Continue DayBrief remediation.
+
+Read docs/REMEDIATION-PLAN.md, docs/DECISIONS.md, and docs/CODE-REVIEW.md for full context.
+Assume Phase 0 is complete — verify with git log and flutter analyze before starting.
+
+Execute Phases 1, 2, 3, and 4 in order from docs/REMEDIATION-PLAN.md.
+After each phase: run flutter analyze, fix issues, then commit with a message like "refactor: Phase N …".
+Do not skip subsections unless blocked — if blocked, say what and stop.
+Push when I ask.
+```
 
 ## Target architecture (end state)
 
@@ -390,7 +422,10 @@ linter:
 
 ## Effort estimate (single dev)
 
-- Phase 0: ~1 day (security + broken paths)
+**Session 1 (today):** Phase 0 only — ~1 day
+
+**Session 2 (continuation prompt):** Phases 1–4 — ~6–9 days focused
+
 - Phase 1: ~0.5 day (deletions + theme consolidation)
 - Phase 2: ~2–3 days (freezed migration + repositories + AsyncValue + go_router)
 - Phase 3: ~2–3 days (3 stub screens × backend + service hardening + i18n)

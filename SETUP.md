@@ -32,24 +32,23 @@ This downloads all packages defined in `pubspec.yaml`.
 
 ---
 
-## Step 3: Add the API Key Config (REQUIRED)
+## Step 3: Set the Claude API Key (REQUIRED for AI features)
 
-The Claude AI features need an API key. The config file is gitignored for security.
+AI features call a local proxy in `server.js`, not Anthropic directly from the app. Set your Anthropic key in the environment before starting the server:
 
-Create the file `lib/config/app_config.dart`:
-
-```dart
-class AppConfig {
-  static const String anthropicApiKey = 'YOUR_CLAUDE_API_KEY_HERE';
-  static const String claudeApiUrl = 'https://api.anthropic.com/v1/messages';
-  static const String claudeModel = 'claude-3-5-sonnet-20241022';
-  static const int maxTokens = 1024;
-}
+**PowerShell (Windows):**
+```powershell
+$env:ANTHROPIC_API_KEY = "your-anthropic-api-key"
+node server.js
 ```
 
-Replace `YOUR_CLAUDE_API_KEY_HERE` with your actual Anthropic API key.
+**macOS / Linux:**
+```bash
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+node server.js
+```
 
-> **Note:** Without this file, the app will fail to compile. The Firebase config is already in the repo so Firebase will work automatically.
+> **Note:** You no longer need `lib/config/app_config.dart`. Firebase config is already in the repo. AI buttons appear on web builds only (`flutter run -d chrome` or `flutter build web` + `node server.js`).
 
 ---
 
@@ -122,7 +121,7 @@ Check that `lib/firebase_options.dart` exists with the real config (it should be
 - **Source code**: `lib/`
 - **Built web app**: `build/web/` (after `flutter build web`)
 - **Server script**: `server.js` (Node.js, no extra dependencies needed)
-- **API keys**: `lib/config/app_config.dart` (create manually)
+- **API key**: set `ANTHROPIC_API_KEY` before running `node server.js`
 - **Firebase config**: `lib/firebase_options.dart` (already in repo)
 
 ---
@@ -135,9 +134,7 @@ git clone https://github.com/stefanbooveanu-debug/daybrief.git
 cd daybrief
 flutter pub get
 
-# Create lib/config/app_config.dart manually with your API key
-
-# Build and run
+# Set ANTHROPIC_API_KEY, then build and run
 flutter build web --release
 node server.js
 ```

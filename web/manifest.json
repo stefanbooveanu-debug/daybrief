@@ -1,6 +1,6 @@
 {
-    "name": "voice_cal",
-    "short_name": "voice_cal",
+    "name": "DayBrief",
+    "short_name": "DayBrief",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

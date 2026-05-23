@@ -1,4 +1,4 @@
-package com.voiscal.voice_cal
+package com.daybrief.app
 
 import io.flutter.embedding.android.FlutterActivity
 

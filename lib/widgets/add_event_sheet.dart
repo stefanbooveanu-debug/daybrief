@@ -209,8 +209,8 @@ class _AddEventSheetState extends State<AddEventSheet> {
                 ],
               ),
               const SizedBox(height: 20),
-              // AI Input Section
-              Container(
+              if (ClaudeService.isSupportedOnPlatform)
+                Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
@@ -282,7 +282,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              if (ClaudeService.isSupportedOnPlatform) const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
@@ -293,7 +293,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFFAFAFA),
+                  fillColor: fieldBg,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -318,7 +318,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           filled: true,
-                          fillColor: const Color(0xFFFAFAFA),
+                          fillColor: fieldBg,
                         ),
                         child: Text(
                           DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
@@ -340,7 +340,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFFAFAFA),
+                    fillColor: fieldBg,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -365,7 +365,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFFAFAFA),
+                  fillColor: fieldBg,
                 ),
                 maxLines: 2,
               ),

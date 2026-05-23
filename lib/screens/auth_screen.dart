@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -35,35 +34,22 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
-    bool success;
 
     if (_isSignUp) {
-      success = await authProvider.signUp(
+      await authProvider.signUp(
         _emailController.text.trim(),
         _passwordController.text,
         _nameController.text.trim(),
         _surnameController.text.trim(),
       );
     } else {
-      success = await authProvider.signIn(
+      await authProvider.signIn(
         _emailController.text.trim(),
         _passwordController.text,
       );
     }
 
-    if (success && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen(
-          categoryColors: const {
-            'Work': Color(0xFF1A73E8),
-            'Personal': Color(0xFF34A853),
-            'Health': Color(0xFFEA4335),
-            'Social': Color(0xFF9334E6),
-            'Shopping': Color(0xFFFBBC04),
-          },
-        )),
-      );
-    }
+    // Auth state change is handled by Consumer<AuthProvider> in main.dart.
   }
 
   @override
