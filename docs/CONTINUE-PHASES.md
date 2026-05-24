@@ -14,18 +14,23 @@ Use this after **Phase 0** is done, committed, and pushed.
 ```
 Continue DayBrief remediation.
 
-Read docs/REMEDIATION-PLAN.md, docs/DECISIONS.md, docs/CODE-REVIEW.md, and .cursor/rules/phase-execution.mdc before writing any code.
+Read in this order before writing any code:
+1. .cursor/rules/phase-execution.mdc   (governance — strict)
+2. docs/DETAILED-PLAN.md               (step-by-step execution checklist)
+3. docs/REMEDIATION-PLAN.md            (design rationale)
+4. docs/DECISIONS.md                   (architectural choices)
+5. docs/CODE-REVIEW.md                 (issue inventory)
 
-Phase 0 is complete (commit 14e8914). Verify with git log and flutter analyze first.
+Phase 0 is complete. Verify with `git log --oneline -5` (look for 14e8914 or later) and `flutter analyze` (must be 0 errors) before starting.
 
-Execute Phases 1, 2, 3, and 4 strictly in order, one subsection at a time:
+Execute Phases 1, 2, 3, and 4 strictly in order, one subsection at a time, following docs/DETAILED-PLAN.md:
 - Before each subsection: state which subsection you are starting.
 - After each subsection: run flutter analyze. Zero errors before continuing.
 - If blocked: stop, explain what is blocking, wait for me.
-- After each full phase: commit with message "refactor: Phase N — <description>".
+- After each full phase: commit with the exact message format in DETAILED-PLAN.md.
 - Never start a new phase until the previous one is committed and clean.
 
-Do not skip subsections. Do not add anything not in REMEDIATION-PLAN.md. Push only when I ask.
+Do not skip subsections. Do not add anything not in the plan. Push only when I ask.
 ```
 
 ## Rules file
