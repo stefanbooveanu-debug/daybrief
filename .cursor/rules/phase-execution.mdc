@@ -1,0 +1,59 @@
+---
+description: Strict execution rules for DayBrief Phases 1–4
+alwaysApply: true
+---
+
+# Phase execution rules (Phases 1–4)
+
+These rules are non-negotiable for all remediation work after Phase 0.
+
+## Before touching any code
+
+1. Run `flutter analyze`. If there are **errors** (not warnings/info), fix them before proceeding.
+2. Run `git status`. Working tree must be **clean** — no uncommitted changes from a previous session.
+3. Confirm which phase and subsection you are starting. State it explicitly before writing any code.
+
+## During each subsection
+
+- Complete **one subsection fully** before starting the next. Never leave a subsection half-done.
+- After every subsection: run `flutter analyze`. **Zero errors required** before continuing.
+- If a subsection is blocked (missing dependency, unclear spec, analyzer error you cannot fix): **stop, explain what is blocking, and wait for the user**. Do not skip silently.
+- Do not refactor anything outside the current subsection's scope.
+- Do not add features not listed in `docs/REMEDIATION-PLAN.md`.
+
+## Commits
+
+- Commit after **every completed phase** (not subsection, unless the phase is large).
+- Commit message format: `refactor: Phase N — <short description>` (e.g. `refactor: Phase 1 — delete dead code, unify theme`).
+- Never commit with analyzer errors present.
+- Never commit unrelated changes.
+
+## Deleting files (Phase 1)
+
+- Before deleting any file, verify **zero imports** of it across `lib/`. Use grep or analyzer.
+- Delete only the files listed in `docs/REMEDIATION-PLAN.md §1.1`. Do not delete anything else.
+- After every deletion, run `flutter analyze` immediately.
+
+## Adding packages (Phase 2+)
+
+- Use `flutter pub add <package>` — do not manually edit `pubspec.yaml` version constraints.
+- After adding: run `flutter pub get` and `flutter analyze` before proceeding.
+- Do not add packages not listed in `docs/REMEDIATION-PLAN.md`.
+
+## Code generation (Phase 2 — freezed)
+
+- Run `dart run build_runner build --delete-conflicting-outputs` after all model changes.
+- Never commit `.g.dart` or `.freezed.dart` files with compile errors.
+
+## Tests (Phase 4)
+
+- Every test file must pass (`flutter test`) before committing.
+- Do not write tests for code that does not exist yet.
+
+## What to never do
+
+- Never start a new phase before the previous one is committed and `flutter analyze` is clean.
+- Never merge Phase 1 deletions with Phase 2 architecture changes in one commit.
+- Never leave `TODO`, `FIXME`, or placeholder `throw UnimplementedError()` in committed code unless explicitly listed as deferred in `docs/REMEDIATION-PLAN.md`.
+- Never rename files or symbols outside the scope of the current phase.
+- Never touch `firebase_options.dart`, `android/app/google-services.json`, or platform-specific bundle ID files — those are locked after Phase 0.
