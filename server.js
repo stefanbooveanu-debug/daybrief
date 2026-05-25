@@ -9,11 +9,17 @@ const ROOT = path.join(__dirname, 'build', 'web');
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
 const CLAUDE_MAX_TOKENS = Number(process.env.CLAUDE_MAX_TOKENS || 1024);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_MAX_TOKENS = Number(process.env.GEMINI_MAX_TOKENS || 1024);
+const LLM_PROVIDER = GEMINI_API_KEY ? 'gemini' : (ANTHROPIC_API_KEY ? 'anthropic' : null);
 
-if (!ANTHROPIC_API_KEY) {
+if (!LLM_PROVIDER) {
   console.warn(
-    'Warning: ANTHROPIC_API_KEY is not set. /api/claude/* routes will return 503.',
+    'Warning: no LLM provider configured. Set GEMINI_API_KEY or ANTHROPIC_API_KEY. /api/claude/* routes will return 503.',
   );
+} else {
+  console.log(`LLM provider: ${LLM_PROVIDER}`);
 }
 
 const mimeTypes = {
@@ -135,6 +141,78 @@ async function anthropicText(systemPrompt, userPrompt) {
   };
 }
 
+function callGemini({ systemPrompt, userPrompt }) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      ...(systemPrompt
+        ? { system_instruction: { parts: [{ text: systemPrompt }] } }
+        : {}),
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      generationConfig: { maxOutputTokens: GEMINI_MAX_TOKENS },
+    });
+
+    const request = https.request(
+      {
+        hostname: 'generativelanguage.googleapis.com',
+        path: `/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      },
+      (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          resolve({
+            statusCode: response.statusCode,
+            headers: response.headers,
+            body: Buffer.concat(chunks).toString('utf8'),
+          });
+        });
+      },
+    );
+
+    request.on('error', reject);
+    request.write(payload);
+    request.end();
+  });
+}
+
+async function geminiText(systemPrompt, userPrompt) {
+  const upstream = await callGemini({ systemPrompt, userPrompt });
+  const responseHeaders = {};
+  if (upstream.headers['retry-after']) {
+    responseHeaders['retry-after'] = upstream.headers['retry-after'];
+  }
+
+  if (upstream.statusCode !== 200) {
+    return {
+      ok: false,
+      statusCode: upstream.statusCode,
+      headers: responseHeaders,
+      error: `Gemini API Error: ${upstream.statusCode} - ${upstream.body}`,
+    };
+  }
+
+  const data = JSON.parse(upstream.body);
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  return {
+    ok: true,
+    statusCode: 200,
+    headers: responseHeaders,
+    text,
+  };
+}
+
+async function llmText(systemPrompt, userPrompt) {
+  if (LLM_PROVIDER === 'gemini') {
+    return geminiText(systemPrompt, userPrompt);
+  }
+  return anthropicText(systemPrompt, userPrompt);
+}
+
 function parseEventSystemPrompt() {
   return `You are a calendar assistant. Parse the user's message into a JSON event.
 Current date/time: ${new Date().toISOString()}
@@ -187,10 +265,10 @@ function cleanJsonText(text) {
 }
 
 async function handleClaudeRoute(req, res, pathname) {
-  if (!ANTHROPIC_API_KEY) {
+  if (!LLM_PROVIDER) {
     sendJson(res, 503, {
       success: false,
-      error: 'Claude proxy is not configured. Set ANTHROPIC_API_KEY.',
+      error: 'AI proxy is not configured. Set GEMINI_API_KEY or ANTHROPIC_API_KEY.',
     });
     return;
   }
@@ -217,7 +295,7 @@ async function handleClaudeRoute(req, res, pathname) {
         return;
       }
 
-      const result = await anthropicText(parseEventSystemPrompt(), userText);
+      const result = await llmText(parseEventSystemPrompt(), userText);
       if (!result.ok) {
         sendJson(
           res,
@@ -265,7 +343,7 @@ async function handleClaudeRoute(req, res, pathname) {
       }
 
       const prompt = `Give me a brief, friendly daily briefing for these events. Keep it under 3 sentences, warm and encouraging:\n\n${formatEventsForSummary(events)}`;
-      const result = await anthropicText(null, prompt);
+      const result = await llmText(null, prompt);
       if (!result.ok) {
         sendJson(
           res,
@@ -296,7 +374,7 @@ ${formatEventsForQuestion(events)}
 
 Answer concisely and conversationally.`;
 
-      const result = await anthropicText(systemPrompt, question);
+      const result = await llmText(systemPrompt, question);
       if (!result.ok) {
         sendJson(
           res,
@@ -322,7 +400,7 @@ Answer concisely and conversationally.`;
       }
 
       const prompt = `Looking at these events, suggest 1-2 helpful insights or patterns in 2 sentences:\n\n${formatEventsForSuggestions(events)}`;
-      const result = await anthropicText(null, prompt);
+      const result = await llmText(null, prompt);
       if (!result.ok) {
         sendJson(
           res,
@@ -390,7 +468,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`DayBrief server running at http://${HOST}:${PORT}`);
-  if (!ANTHROPIC_API_KEY) {
-    console.log('Set ANTHROPIC_API_KEY before starting to enable AI routes.');
+  if (!LLM_PROVIDER) {
+    console.log('Set GEMINI_API_KEY (recommended) or ANTHROPIC_API_KEY before starting to enable AI routes.');
   }
 });
