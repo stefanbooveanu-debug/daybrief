@@ -2,109 +2,183 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
 
+sealed class VoiceAction {
+  const VoiceAction();
+}
+
+class VoiceNoOp extends VoiceAction {
+  const VoiceNoOp();
+}
+
+class VoiceShowAddEvent extends VoiceAction {
+  const VoiceShowAddEvent();
+}
+
+class VoiceMoveEvent extends VoiceAction {
+  const VoiceMoveEvent(this.eventId, this.newTime);
+  final String eventId;
+  final DateTime newTime;
+}
+
+class VoiceDeleteEvent extends VoiceAction {
+  const VoiceDeleteEvent(this.eventName);
+  final String eventName;
+}
+
+class VoiceSpoken extends VoiceAction {
+  const VoiceSpoken(this.text);
+  final String text;
+}
+
 class VoiceCommandService {
   static const String wakeWord = 'hey daybrief';
 
-  Future<String> processCommand(String text, List<Event> events, Future<void> Function(String) speak) async {
+  Future<VoiceAction> processCommand(String text, List<Event> events) async {
     final lowerText = text.toLowerCase();
-    final hasWakeWord = lowerText.contains(wakeWord) || lowerText.contains('daybrief');
-    final commandText = hasWakeWord 
-        ? lowerText.replaceAll(RegExp(r'hey daybrief|daybrief'), '').trim() 
+    final hasWakeWord =
+        lowerText.contains(wakeWord) || lowerText.contains('daybrief');
+    final commandText = hasWakeWord
+        ? lowerText.replaceAll(RegExp(r'hey daybrief|daybrief'), '').trim()
         : lowerText;
-    
+
     if (!hasWakeWord) {
-      return '';
+      return const VoiceNoOp();
     }
-    
-    if (commandText.contains('what day is it') || commandText.contains("what's today's date") || commandText.contains('what is the date')) {
+
+    if (commandText.contains('what day is it') ||
+        commandText.contains("what's today's date") ||
+        commandText.contains('what is the date')) {
       final now = DateTime.now();
       final dayName = DateFormat('EEEE').format(now);
       final monthName = DateFormat('MMMM').format(now);
-      await speak("Today is $dayName, $monthName ${now.day}, ${now.year}");
+      return VoiceSpoken('Today is $dayName, $monthName ${now.day}, ${now.year}');
     }
-    else if (commandText.contains('what time is it') || commandText.contains("what's the time") || commandText.contains('tell me the time')) {
-      final now = DateTime.now();
-      final timeStr = DateFormat('h:mm a').format(now);
-      await speak("It's $timeStr");
+
+    if (commandText.contains('what time is it') ||
+        commandText.contains("what's the time") ||
+        commandText.contains('tell me the time')) {
+      final timeStr = DateFormat('h:mm a').format(DateTime.now());
+      return VoiceSpoken("It's $timeStr");
     }
-    else if (commandText.contains('what do i have today') || 
+
+    if (commandText.contains('what do i have today') ||
         commandText.contains('what do i have scheduled') ||
         commandText.contains("what's on my schedule") ||
         commandText.contains('my schedule')) {
-      await _speakSchedule(events, speak);
-    } 
-    else if (commandText.contains('add event') || commandText.contains('new event') || commandText.contains('schedule something') || commandText.contains('schedule') || commandText.contains('book')) {
-      await speak('Opening add event');
-      return 'SHOW_ADD_EVENT';
+      return VoiceSpoken(formatScheduleForSpeech(events));
     }
-    else if (commandText.contains('move') || commandText.contains('change') || commandText.contains('reschedule') || commandText.contains('shift')) {
-      await _handleMoveEvent(commandText, events, speak);
+
+    if (commandText.contains('add event') ||
+        commandText.contains('new event') ||
+        commandText.contains('schedule something') ||
+        commandText.contains('schedule') ||
+        commandText.contains('book')) {
+      return const VoiceShowAddEvent();
     }
-    else if (commandText.contains('delete') || commandText.contains('cancel') || commandText.contains('remove')) {
-      await _handleDeleteByVoice(commandText, events, speak);
+
+    if (commandText.contains('move') ||
+        commandText.contains('change') ||
+        commandText.contains('reschedule') ||
+        commandText.contains('shift')) {
+      return parseMoveEvent(commandText, events);
     }
-    else if (commandText.contains('insight') || commandText.contains('focus') || commandText.contains('recommend') || commandText.contains('suggest')) {
-      await _giveInsights(events, speak);
+
+    if (commandText.contains('delete') ||
+        commandText.contains('cancel') ||
+        commandText.contains('remove')) {
+      return parseDeleteEvent(commandText, events);
     }
-    else if (commandText.contains('hello') || commandText.contains('hi') || commandText.contains('hey')) {
-      await speak('Hey there! How can I help you with your calendar today?');
+
+    if (commandText.contains('insight') ||
+        commandText.contains('focus') ||
+        commandText.contains('recommend') ||
+        commandText.contains('suggest')) {
+      return VoiceSpoken(_buildInsights(events));
     }
-    else if (commandText.contains('help') || commandText.contains('what can you do')) {
-      await speak('I can help you. Try saying: what do I have today, schedule lunch tomorrow at 1pm, move my 3pm to 5pm, or what should I focus on?');
+
+    if (commandText.contains('hello') ||
+        commandText.contains('hi') ||
+        commandText.contains('hey')) {
+      return const VoiceSpoken(
+          'Hey there! How can I help you with your calendar today?');
     }
-    else if (commandText.contains('thank you') || commandText.contains('thanks')) {
-      await speak("You're welcome!");
+
+    if (commandText.contains('help') ||
+        commandText.contains('what can you do')) {
+      return const VoiceSpoken(
+          'I can help you. Try saying: what do I have today, schedule lunch tomorrow at 1pm, move my 3pm to 5pm, or what should I focus on?');
     }
-    else if (commandText.isNotEmpty) {
-      await speak("I'm not sure how to help with that. Try saying help to hear what I can do.");
+
+    if (commandText.contains('thank you') || commandText.contains('thanks')) {
+      return const VoiceSpoken("You're welcome!");
     }
-    
-    return '';
+
+    if (commandText.isNotEmpty) {
+      return const VoiceSpoken(
+          "I'm not sure how to help with that. Try saying help to hear what I can do.");
+    }
+
+    return const VoiceNoOp();
   }
 
-  Future<void> _speakSchedule(List<Event> events, Future<void> Function(String) speak) async {
-    final todayEvents = events.where((e) => 
-      e.dateTime.year == DateTime.now().year &&
-      e.dateTime.month == DateTime.now().month &&
-      e.dateTime.day == DateTime.now().day
-    ).toList();
-    
+  String formatScheduleForSpeech(List<Event> events) {
+    final now = DateTime.now();
+    final todayEvents = events
+        .where((e) =>
+            e.dateTime.year == now.year &&
+            e.dateTime.month == now.month &&
+            e.dateTime.day == now.day)
+        .toList();
+
     if (todayEvents.isEmpty) {
-      await speak("Hey! You have nothing planned for today. Enjoy your free time!");
-    } else if (todayEvents.length == 1) {
+      return "Hey! You have nothing planned for today. Enjoy your free time!";
+    }
+    if (todayEvents.length == 1) {
       final e = todayEvents.first;
       final time = DateFormat('h:mm a').format(e.dateTime);
-      final desc = (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
-      await speak("Hey! Today you need to go to ${e.title}$desc at $time");
-    } else {
-      final parts = <String>[];
-      for (final e in todayEvents) {
-        final time = DateFormat('h:mm a').format(e.dateTime);
-        final desc = (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
-        parts.add("${e.title}$desc at $time");
-      }
-      await speak("Hey! Today you have ${todayEvents.length} things to do. ${parts.join('. ')}");
+      final desc =
+          (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
+      return "Hey! Today you need to go to ${e.title}$desc at $time";
     }
+    final parts = <String>[];
+    for (final e in todayEvents) {
+      final time = DateFormat('h:mm a').format(e.dateTime);
+      final desc =
+          (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
+      parts.add("${e.title}$desc at $time");
+    }
+    return "Hey! Today you have ${todayEvents.length} things to do. ${parts.join('. ')}";
   }
 
-  Future<void> _handleMoveEvent(String command, List<Event> events, Future<void> Function(String) speak) async {
+  static String formatEventsForSpeech(List<Event> events) {
+    if (events.isEmpty) return 'No events scheduled';
+    final buffer = StringBuffer(
+        'You have ${events.length} event${events.length > 1 ? 's' : ''}');
+    for (final event in events) {
+      final time = DateFormat('h:mm a').format(event.dateTime);
+      buffer.write('. ${event.title} at $time');
+    }
+    return buffer.toString();
+  }
+
+  VoiceAction parseMoveEvent(String command, List<Event> events) {
     final fromTime = _parseTime(command, ['from', 'at', 'my']);
     final toTime = _parseTime(command, ['to']);
-    
+
     if (fromTime == null && toTime == null) {
-      await speak("I didn't catch the times. Try saying: move my 3pm to 5pm");
-      return;
+      return const VoiceSpoken(
+          "I didn't catch the times. Try saying: move my 3pm to 5pm");
     }
-    
+
     Event? targetEvent;
-    
+    final now = DateTime.now();
+
     if (fromTime != null) {
-      try {
-        targetEvent = events.firstWhere(
-          (e) => e.dateTime.hour == fromTime.hour && e.dateTime.day == DateTime.now().day,
-        );
-      } catch (_) {
-        targetEvent = null;
+      for (final e in events) {
+        if (e.dateTime.hour == fromTime.hour && e.dateTime.day == now.day) {
+          targetEvent = e;
+          break;
+        }
       }
     } else {
       for (final e in events) {
@@ -114,77 +188,81 @@ class VoiceCommandService {
         }
       }
     }
-    
+
     if (targetEvent == null) {
-      await speak("I couldn't find that event. Can you be more specific?");
-      return;
+      return const VoiceSpoken(
+          "I couldn't find that event. Can you be more specific?");
     }
-    
-    if (toTime != null) {
-      await speak("MOVE_EVENT:${targetEvent.id}|${toTime.hour}:${toTime.minute}");
-    } else {
-      await speak("Which time do you want to move it to?");
+    if (toTime == null) {
+      return const VoiceSpoken("Which time do you want to move it to?");
     }
+
+    final newDateTime = DateTime(
+      targetEvent.dateTime.year,
+      targetEvent.dateTime.month,
+      targetEvent.dateTime.day,
+      toTime.hour,
+      toTime.minute,
+    );
+    return VoiceMoveEvent(targetEvent.id, newDateTime);
   }
 
-  Future<void> _handleDeleteByVoice(String command, List<Event> events, Future<void> Function(String) speak) async {
-    String? eventName;
-    
+  VoiceAction parseDeleteEvent(String command, List<Event> events) {
     for (final e in events) {
       if (command.contains(e.title.toLowerCase())) {
-        eventName = e.title;
-        break;
+        return VoiceDeleteEvent(e.title);
       }
     }
-    
-    if (eventName == null) {
-      await speak("Which event do you want to delete?");
-      return;
-    }
-    
-    await speak("DELETE_EVENT:$eventName");
+    return const VoiceSpoken("Which event do you want to delete?");
   }
 
-  Future<void> _giveInsights(List<Event> events, Future<void> Function(String) speak) async {
+  String _buildInsights(List<Event> events) {
     final now = DateTime.now();
-    final weekEvents = events.where((e) => 
-      e.dateTime.isAfter(now.subtract(Duration(days: now.weekday))) && 
-      e.dateTime.isBefore(now.add(Duration(days: 7)))
-    ).toList();
-    
+    final weekEvents = events
+        .where((e) =>
+            e.dateTime.isAfter(now.subtract(Duration(days: now.weekday))) &&
+            e.dateTime.isBefore(now.add(const Duration(days: 7))))
+        .toList();
+
     if (weekEvents.isEmpty) {
-      await speak("You have no events this week. Enjoy your free time!");
-      return;
+      return "You have no events this week. Enjoy your free time!";
     }
-    
+
     final categoryCount = <String, int>{};
     for (final e in weekEvents) {
       final cat = e.category ?? 'Other';
       categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
     }
-    
-    final sorted = categoryCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    final sorted = categoryCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     final topCat = sorted.isNotEmpty ? sorted.first.key : 'work';
-    
-    final workEvents = weekEvents.where((e) => e.category == 'Work' || e.category == 'Personal').length;
-    final healthEvents = weekEvents.where((e) => e.category == 'Health').length;
-    
-    String insight = "Here's your week at a glance. You have ${weekEvents.length} events, mostly $topCat. ";
-    
+
+    final workEvents = weekEvents
+        .where((e) => e.category == 'Work' || e.category == 'Personal')
+        .length;
+    final healthEvents =
+        weekEvents.where((e) => e.category == 'Health').length;
+
+    var insight =
+        "Here's your week at a glance. You have ${weekEvents.length} events, mostly $topCat. ";
+
     if (healthEvents == 0 && workEvents > 3) {
-      insight += "Consider adding some exercise time - you have no health activities scheduled.";
+      insight +=
+          "Consider adding some exercise time - you have no health activities scheduled.";
     } else if (workEvents > 10) {
       insight += "That's a busy week! Make sure to take breaks between meetings.";
     } else {
       insight += "You've got a good balance. Keep it up!";
     }
-    
-    await speak(insight);
+
+    return insight;
   }
 
   TimeOfDay? _parseTime(String text, List<String> markers) {
-    final hourPattern = RegExp(r'(\d{1,2})\s*(am|pm)', caseSensitive: false);
-    
+    final hourPattern =
+        RegExp(r'(\d{1,2})\s*(am|pm)', caseSensitive: false);
+
     for (final marker in markers) {
       final idx = text.indexOf(marker);
       if (idx != -1) {
@@ -202,22 +280,49 @@ class VoiceCommandService {
     return null;
   }
 
-  Event? parseVoiceEvent(String text, String userId) {
-    final timePattern = RegExp(r'(\d{1,2})\s*(am|pm|oclock)?', caseSensitive: false);
+  Event? parseAddEvent(String text, String userId) {
+    final timePattern =
+        RegExp(r'(\d{1,2})\s*(am|pm|oclock)?', caseSensitive: false);
     final timeMatch = timePattern.firstMatch(text);
-    
-    final dayPattern = RegExp(r'(today|tomorrow|next\s+\w+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)', caseSensitive: false);
+
+    final dayPattern = RegExp(
+        r'(today|tomorrow|next\s+\w+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
+        caseSensitive: false);
     final dayMatch = dayPattern.firstMatch(text);
-    
+
     final words = text.split(' ');
-    final stopWords = {'schedule', 'at', 'with', 'for', 'on', 'the', 'a', 'an', 'tomorrow', 'today', 'pm', 'am', 'oclock', 'o'};
-    final titleWords = words.where((w) => !stopWords.contains(w.toLowerCase()) && !RegExp(r'\d').hasMatch(w) && !dayPattern.hasMatch(w)).toList();
-    
+    const stopWords = {
+      'schedule',
+      'at',
+      'with',
+      'for',
+      'on',
+      'the',
+      'a',
+      'an',
+      'tomorrow',
+      'today',
+      'pm',
+      'am',
+      'oclock',
+      'o'
+    };
+    final titleWords = words
+        .where((w) =>
+            !stopWords.contains(w.toLowerCase()) &&
+            !RegExp(r'\d').hasMatch(w) &&
+            !dayPattern.hasMatch(w))
+        .toList();
+
     if (titleWords.isEmpty) return null;
-    
-    final title = titleWords.take(6).join(' ').replaceAll(RegExp(r'(schedule|book|event|meeting|call)'), '').trim();
+
+    final title = titleWords
+        .take(6)
+        .join(' ')
+        .replaceAll(RegExp(r'(schedule|book|event|meeting|call)'), '')
+        .trim();
     if (title.isEmpty) return null;
-    
+
     TimeOfDay? time;
     if (timeMatch != null) {
       var hour = int.parse(timeMatch.group(1)!);
@@ -227,16 +332,32 @@ class VoiceCommandService {
       if (isAM && hour == 12) hour = 0;
       time = TimeOfDay(hour: hour, minute: 0);
     }
-    
-    DateTime eventDate = DateTime.now();
+
+    var eventDate = DateTime.now();
     if (dayMatch != null) {
       final dayStr = dayMatch.group(1)!.toLowerCase();
       if (dayStr == 'today') {
         eventDate = DateTime.now();
       } else if (dayStr == 'tomorrow') {
         eventDate = DateTime.now().add(const Duration(days: 1));
-      } else if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].contains(dayStr)) {
-        final weekdays = {'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7};
+      } else if ([
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday'
+      ].contains(dayStr)) {
+        const weekdays = {
+          'monday': 1,
+          'tuesday': 2,
+          'wednesday': 3,
+          'thursday': 4,
+          'friday': 5,
+          'saturday': 6,
+          'sunday': 7
+        };
         final targetDay = weekdays[dayStr]!;
         final now = DateTime.now();
         var daysUntil = targetDay - now.weekday;
@@ -244,15 +365,14 @@ class VoiceCommandService {
         eventDate = now.add(Duration(days: daysUntil));
       }
     }
-    
-    if (time == null) {
-      time = const TimeOfDay(hour: 9, minute: 0);
-    }
-    
+
+    time ??= const TimeOfDay(hour: 9, minute: 0);
+
     return Event(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
-      dateTime: DateTime(eventDate.year, eventDate.month, eventDate.day, time.hour, time.minute),
+      dateTime: DateTime(eventDate.year, eventDate.month, eventDate.day,
+          time.hour, time.minute),
       category: _inferCategory(title),
       reminderEnabled: true,
       userId: userId,
@@ -261,11 +381,34 @@ class VoiceCommandService {
 
   String _inferCategory(String title) {
     final lower = title.toLowerCase();
-    if (lower.contains('meeting') || lower.contains('work') || lower.contains('call') || lower.contains('standup')) return 'Work';
-    if (lower.contains('gym') || lower.contains('workout') || lower.contains('run') || lower.contains('doctor')) return 'Health';
-    if (lower.contains('lunch') || lower.contains('dinner') || lower.contains('coffee') || lower.contains('date')) return 'Personal';
-    if (lower.contains('birthday') || lower.contains('party') || lower.contains('hangout')) return 'Social';
-    if (lower.contains('shop') || lower.contains('buy') || lower.contains('grocery')) return 'Shopping';
+    if (lower.contains('meeting') ||
+        lower.contains('work') ||
+        lower.contains('call') ||
+        lower.contains('standup')) {
+      return 'Work';
+    }
+    if (lower.contains('gym') ||
+        lower.contains('workout') ||
+        lower.contains('run') ||
+        lower.contains('doctor')) {
+      return 'Health';
+    }
+    if (lower.contains('lunch') ||
+        lower.contains('dinner') ||
+        lower.contains('coffee') ||
+        lower.contains('date')) {
+      return 'Personal';
+    }
+    if (lower.contains('birthday') ||
+        lower.contains('party') ||
+        lower.contains('hangout')) {
+      return 'Social';
+    }
+    if (lower.contains('shop') ||
+        lower.contains('buy') ||
+        lower.contains('grocery')) {
+      return 'Shopping';
+    }
     return 'Other';
   }
 }

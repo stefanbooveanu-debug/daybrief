@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/voice_template.dart';
 import '../providers/voice_template_provider.dart';
+import '../theme/app_theme.dart';
 
 class VoiceTemplatesScreen extends StatefulWidget {
   const VoiceTemplatesScreen({super.key});
@@ -151,37 +152,13 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
   }
 
   Color _getCategoryColor(String? category) {
-    switch (category) {
-      case 'Work':
-        return const Color(0xFF1A73E8);
-      case 'Personal':
-        return const Color(0xFF34A853);
-      case 'Health':
-        return const Color(0xFFEA4335);
-      case 'Social':
-        return const Color(0xFF9334E6);
-      case 'Shopping':
-        return const Color(0xFFFBBC04);
-      default:
-        return const Color(0xFF5F6368);
-    }
+    return Theme.of(context).extension<CategoryColors>()?.colorFor(category) ??
+        AppColors.defaultCategoryColors[category] ??
+        AppColors.defaultCategoryColors['Other']!;
   }
 
   IconData _getCategoryIcon(String? category) {
-    switch (category) {
-      case 'Work':
-        return Icons.work_outline;
-      case 'Personal':
-        return Icons.person_outline;
-      case 'Health':
-        return Icons.favorite_outline;
-      case 'Social':
-        return Icons.people_outline;
-      case 'Shopping':
-        return Icons.shopping_cart_outlined;
-      default:
-        return Icons.event;
-    }
+    return AppColors.getCategoryIcon(category ?? '');
   }
 
   void _deleteTemplate(String id) {

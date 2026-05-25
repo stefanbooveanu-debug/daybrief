@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/event.dart';
 import '../providers/voice_provider.dart';
 import '../providers/event_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/voice_template_provider.dart';
+import '../services/voice_command_service.dart';
 
 class VoiceAssistantButton extends StatefulWidget {
   const VoiceAssistantButton({super.key});
@@ -39,28 +42,26 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
 
   void _toggleListening() {
     final voiceProvider = context.read<VoiceProvider>();
-    
+
     if (voiceProvider.isListening) {
       voiceProvider.stopListening();
       _animationController.stop();
       _animationController.reset();
     } else {
       voiceProvider.startListening(
-        onResult: (text) {
-          _handleVoiceResult(text);
-        },
+        onResult: _handleVoiceResult,
         onWakeWordDetected: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
+            const SnackBar(
+              content: Row(
                 children: [
                   Icon(Icons.mic, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Text('Listening for your command...'),
                 ],
               ),
-              backgroundColor: const Color(0xFF1A73E8),
-              duration: const Duration(seconds: 2),
+              backgroundColor: Color(0xFF1A73E8),
+              duration: Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -70,34 +71,61 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
     }
   }
 
-  void _handleVoiceResult(String text) {
+  Future<void> _handleVoiceResult(String text) async {
     final voiceProvider = context.read<VoiceProvider>();
     final eventProvider = context.read<EventProvider>();
     final authProvider = context.read<AuthProvider>();
+    final templateProvider = context.read<VoiceTemplateProvider>();
 
-    if (voiceProvider.isWakeWord(text)) {
-      _animationController.stop();
-      _animationController.reset();
+    if (!voiceProvider.isWakeWord(text)) return;
 
-      final queryPattern = RegExp(r'what\s+(do\s+i\s+have|i\s+have)\s+(scheduled\s+)?today', caseSensitive: false);
-      final addPattern = RegExp(r'add\s+.+|schedule\s+.+', caseSensitive: false);
+    _animationController.stop();
+    _animationController.reset();
 
-      if (queryPattern.hasMatch(text)) {
-        final events = eventProvider.events;
-        final speech = eventProvider.formatEventsForSpeech(events);
-        voiceProvider.speak(speech);
-      } else if (addPattern.hasMatch(text)) {
-        final event = eventProvider.parseVoiceEvent(text, authProvider.userId ?? '');
-        if (event != null) {
-          eventProvider.addEvent(event);
-          voiceProvider.speak("Added ${event.title} at ${eventProvider.formatTime(event.dateTime)}");
-        } else {
-          voiceProvider.speak("Sorry, I didn't understand. Try saying 'add [event] at [time]'");
+    final action = await voiceProvider.processCommand(
+      text,
+      events: eventProvider.events,
+      userId: authProvider.userId ?? '',
+      matchTemplate: templateProvider.matchTemplate,
+      onAddEvent: eventProvider.addEvent,
+    );
+
+    switch (action) {
+      case VoiceNoOp():
+        return;
+      case VoiceShowAddEvent():
+        await voiceProvider.speak('Opening add event');
+      case VoiceMoveEvent(eventId: final id, newTime: final time):
+        final target = _findById(eventProvider.events, id);
+        if (target != null) {
+          await eventProvider.updateEvent(target.copyWith(dateTime: time));
+          await voiceProvider.speak('Moved "${target.title}"');
         }
-      } else {
-        voiceProvider.speak("Say 'what do I have today' to hear your schedule, or 'add [event] at [time]' to add an event.");
-      }
+      case VoiceDeleteEvent(eventName: final name):
+        final match = _findByTitle(eventProvider.events, name);
+        if (match != null) {
+          await eventProvider.deleteEvent(match.id);
+          await voiceProvider.speak('Deleted "$name"');
+        } else {
+          await voiceProvider.speak("Couldn't find $name");
+        }
+      case VoiceSpoken(text: final t):
+        await voiceProvider.speak(t);
     }
+  }
+
+  Event? _findById(List<Event> events, String id) {
+    for (final e in events) {
+      if (e.id == id) return e;
+    }
+    return null;
+  }
+
+  Event? _findByTitle(List<Event> events, String title) {
+    for (final e in events) {
+      if (e.title == title) return e;
+    }
+    return null;
   }
 
   @override
@@ -113,7 +141,8 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
             return Transform.scale(
               scale: isListening ? _scaleAnimation.value : 1.0,
               child: FloatingActionButton.extended(
-                onPressed: voiceProvider.isInitialized ? _toggleListening : null,
+                onPressed:
+                    voiceProvider.isInitialized ? _toggleListening : null,
                 backgroundColor: isListening
                     ? Colors.red
                     : isSpeaking
@@ -134,7 +163,8 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
                       : isListening
                           ? 'Listening...'
                           : 'Hey DayBrief',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w500),
                 ),
               ),
             );

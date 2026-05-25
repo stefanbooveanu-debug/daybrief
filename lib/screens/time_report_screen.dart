@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/event_provider.dart';
 import '../models/event.dart';
+import '../theme/app_theme.dart';
 
 class TimeReportScreen extends StatelessWidget {
   final List<Event>? events;
@@ -25,14 +26,11 @@ class TimeReportScreen extends StatelessWidget {
     }
     
     final sorted = categoryCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    final colors = {
-      'Work': const Color(0xFF1A73E8),
-      'Personal': const Color(0xFF34A853),
-      'Health': const Color(0xFFEA4335),
-      'Social': const Color(0xFF9334E6),
-      'Shopping': const Color(0xFFFBBC04),
-      'Other': const Color(0xFF5F6368),
-    };
+    final categoryColors = Theme.of(context).extension<CategoryColors>();
+    Color colorFor(String name) =>
+        categoryColors?.colorFor(name) ??
+        AppColors.defaultCategoryColors[name] ??
+        AppColors.defaultCategoryColors['Other']!;
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
@@ -55,7 +53,7 @@ class TimeReportScreen extends StatelessWidget {
           if (sorted.isEmpty)
             Center(child: Text('No events this week', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])))
           else
-            ...sorted.map((entry) => _buildCategoryRow(entry.key, entry.value, weekEvents.length, colors[entry.key] ?? colors['Other']!, isDark)),
+            ...sorted.map((entry) => _buildCategoryRow(entry.key, entry.value, weekEvents.length, colorFor(entry.key), isDark)),
           const SizedBox(height: 24),
           Text('Daily Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
           const SizedBox(height: 16),

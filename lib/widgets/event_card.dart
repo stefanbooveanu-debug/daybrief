@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/event.dart';
+import '../theme/app_theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 
 class EventCard extends StatelessWidget {
@@ -20,40 +21,42 @@ class EventCard extends StatelessWidget {
     this.onDuplicate,
     this.onComplete,
     this.isDark = false,
-    this.categoryColors = const {
-      'Work': Color(0xFF1A73E8),
-      'Personal': Color(0xFF34A853),
-      'Health': Color(0xFFEA4335),
-      'Social': Color(0xFF9334E6),
-      'Shopping': Color(0xFFFBBC04),
-    },
+    this.categoryColors = const <String, Color>{},
   });
 
-  Color _getEventColor() {
+  Color _categoryColor(BuildContext context, String name) {
+    final fromArg = categoryColors[name];
+    if (fromArg != null) return fromArg;
+    return Theme.of(context).extension<CategoryColors>()?.colorFor(name) ??
+        AppColors.defaultCategoryColors[name] ??
+        AppColors.defaultCategoryColors['Other']!;
+  }
+
+  Color _getEventColor(BuildContext context) {
     final cat = event.category?.toLowerCase() ?? '';
-    if (cat.contains('work')) return categoryColors['Work'] ?? const Color(0xFF1A73E8);
-    if (cat.contains('personal')) return categoryColors['Personal'] ?? const Color(0xFF34A853);
-    if (cat.contains('health')) return categoryColors['Health'] ?? const Color(0xFFEA4335);
-    if (cat.contains('social')) return categoryColors['Social'] ?? const Color(0xFF9334E6);
-    if (cat.contains('shopping')) return categoryColors['Shopping'] ?? const Color(0xFFFBBC04);
-    
+    if (cat.contains('work')) return _categoryColor(context, 'Work');
+    if (cat.contains('personal')) return _categoryColor(context, 'Personal');
+    if (cat.contains('health')) return _categoryColor(context, 'Health');
+    if (cat.contains('social')) return _categoryColor(context, 'Social');
+    if (cat.contains('shopping')) return _categoryColor(context, 'Shopping');
+
     final title = event.title.toLowerCase();
     if (title.contains('meeting') || title.contains('call') || title.contains('work') || title.contains('standup') || title.contains('deadline')) {
-      return categoryColors['Work'] ?? const Color(0xFF1A73E8);
+      return _categoryColor(context, 'Work');
     } else if (title.contains('gym') || title.contains('workout') || title.contains('run') || title.contains('yoga') || title.contains('sport')) {
-      return categoryColors['Health'] ?? const Color(0xFFEA4335);
+      return _categoryColor(context, 'Health');
     } else if (title.contains('doctor') || title.contains('med') || title.contains('health') || title.contains('dentist')) {
-      return categoryColors['Health'] ?? const Color(0xFFEA4335);
+      return _categoryColor(context, 'Health');
     } else if (title.contains('birthday') || title.contains('party') || title.contains('social') || title.contains('hangout')) {
-      return categoryColors['Social'] ?? const Color(0xFF9334E6);
+      return _categoryColor(context, 'Social');
     } else if (title.contains('shop') || title.contains('grocery') || title.contains('store')) {
-      return categoryColors['Shopping'] ?? const Color(0xFFFBBC04);
+      return _categoryColor(context, 'Shopping');
     } else if (title.contains('coffee') || title.contains('lunch') || title.contains('dinner') || title.contains('food')) {
-      return categoryColors['Personal'] ?? const Color(0xFF34A853);
+      return _categoryColor(context, 'Personal');
     } else if (title.contains('travel') || title.contains('flight') || title.contains('trip')) {
-      return categoryColors['Social'] ?? const Color(0xFF9334E6);
+      return _categoryColor(context, 'Social');
     }
-    return categoryColors['Work'] ?? (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8));
+    return _categoryColor(context, 'Work');
   }
 
   IconData _getEventIcon() {
@@ -88,7 +91,7 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getEventColor();
+    final color = _getEventColor(context);
     final isUpcoming = _isUpcoming();
 
     return Dismissible(
@@ -293,12 +296,12 @@ class EventCard extends StatelessWidget {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: _getEventColor().withOpacity(0.1),
+                    color: _getEventColor(context).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     _getEventIcon(),
-                    color: _getEventColor(),
+                    color: _getEventColor(context),
                     size: 28,
                   ),
                 ),
@@ -336,7 +339,7 @@ class EventCard extends StatelessWidget {
                           Text(
                             _cachedTimeFormat.format(event.dateTime),
                             style: TextStyle(
-                              color: _getEventColor(),
+                              color: _getEventColor(context),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -399,10 +402,10 @@ class EventCard extends StatelessWidget {
                       Navigator.pop(context);
                       if (onDuplicate != null) onDuplicate!();
                     },
-                    icon: Icon(Icons.copy, color: _getEventColor()),
-                    label: Text('Duplicate', style: TextStyle(color: _getEventColor())),
+                    icon: Icon(Icons.copy, color: _getEventColor(context)),
+                    label: Text('Duplicate', style: TextStyle(color: _getEventColor(context))),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: _getEventColor()),
+                      side: BorderSide(color: _getEventColor(context)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

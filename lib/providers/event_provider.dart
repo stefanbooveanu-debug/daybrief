@@ -176,36 +176,6 @@ class EventProvider with ChangeNotifier {
     return stats;
   }
 
-  String formatEventsForSpeech(List<Event> events) {
-    if (events.isEmpty) return 'No events scheduled';
-    final buffer = StringBuffer('You have ${events.length} event${events.length > 1 ? 's' : ''}');
-    for (final event in events) {
-      final time = DateFormat('h:mm a').format(event.dateTime);
-      buffer.write('. ${event.title} at $time');
-    }
-    return buffer.toString();
-  }
-
-  Event? parseVoiceEvent(String text, String userId) {
-    final timePattern = RegExp(r'at\s+(\d{1,2})\s*(am|pm)?', caseSensitive: false);
-    final match = timePattern.firstMatch(text);
-    if (match == null) return null;
-    
-    final hour = int.tryParse(match.group(1) ?? '') ?? 0;
-    final isPm = match.group(2)?.toLowerCase() == 'pm';
-    final hour24 = isPm && hour != 12 ? hour + 12 : (!isPm && hour == 12 ? 0 : hour);
-    
-    final title = text.replaceAll(timePattern, '').replaceAll(RegExp(r'\b(add|schedule)\b', caseSensitive: false), '').trim();
-    if (title.isEmpty) return null;
-    
-    return Event(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      dateTime: DateTime.now().copyWith(hour: hour24, minute: 0),
-      userId: userId,
-    );
-  }
-
   String formatTime(DateTime dt) {
     return DateFormat('h:mm a').format(dt);
   }

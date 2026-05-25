@@ -148,6 +148,9 @@ class AppTheme {
         color: Color(0xFFD4C8B8),
         thickness: 1,
       ),
+      extensions: const <ThemeExtension<dynamic>>[
+        CategoryColors(AppColors.defaultCategoryColors),
+      ],
     );
   }
 
@@ -219,6 +222,34 @@ class AppTheme {
         color: Color(0xFF3C4043),
         thickness: 1,
       ),
+      extensions: const <ThemeExtension<dynamic>>[
+        CategoryColors(AppColors.defaultCategoryColors),
+      ],
     );
+  }
+}
+
+@immutable
+class CategoryColors extends ThemeExtension<CategoryColors> {
+  const CategoryColors(this.values);
+
+  final Map<String, Color> values;
+
+  Color colorFor(String? name) =>
+      (name != null ? values[name] : null) ??
+      AppColors.defaultCategoryColors[name] ??
+      AppColors.defaultCategoryColors['Other']!;
+
+  @override
+  CategoryColors copyWith({Map<String, Color>? values}) =>
+      CategoryColors(values ?? this.values);
+
+  @override
+  CategoryColors lerp(ThemeExtension<CategoryColors>? other, double t) {
+    if (other is! CategoryColors) return this;
+    return CategoryColors({
+      for (final key in values.keys)
+        key: Color.lerp(values[key], other.values[key], t) ?? values[key]!,
+    });
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
+import '../theme/app_theme.dart';
 
 class ShareCalendarScreen extends StatefulWidget {
   final List<Event>? events;
@@ -149,13 +150,8 @@ class _ShareCalendarScreenState extends State<ShareCalendarScreen> {
   }
   
   Color _getCategoryColor(String? category) {
-    switch (category) {
-      case 'Work': return const Color(0xFF1A73E8);
-      case 'Personal': return const Color(0xFF34A853);
-      case 'Health': return const Color(0xFFEA4335);
-      case 'Social': return const Color(0xFF9334E6);
-      case 'Shopping': return const Color(0xFFFBBC04);
-      default: return const Color(0xFF5F6368);
-    }
+    return Theme.of(context).extension<CategoryColors>()?.colorFor(category) ??
+        AppColors.defaultCategoryColors[category] ??
+        AppColors.defaultCategoryColors['Other']!;
   }
 }

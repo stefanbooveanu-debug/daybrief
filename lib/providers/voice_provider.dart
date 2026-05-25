@@ -1,18 +1,32 @@
 import 'package:flutter/foundation.dart';
+import '../models/event.dart';
+import '../models/voice_template.dart';
 import '../services/speech_service.dart';
+import '../services/voice_command_service.dart';
 
 class VoiceProvider with ChangeNotifier {
-  final SpeechService _speechService = SpeechService();
+  VoiceProvider({
+    SpeechService? speechService,
+    VoiceCommandService? commandService,
+  })  : _speechService = speechService ?? SpeechService(),
+        _commandService = commandService ?? VoiceCommandService() {
+    initialize();
+  }
+
+  final SpeechService _speechService;
+  final VoiceCommandService _commandService;
+
   bool _isListening = false;
   bool _isSpeaking = false;
   bool _isInitialized = false;
   String _lastResult = '';
-  String _wakeWord = 'hey daybrief';
+  final String _wakeWord = 'hey daybrief';
 
   bool get isListening => _isListening;
   bool get isSpeaking => _isSpeaking;
   bool get isInitialized => _isInitialized;
   String get lastResult => _lastResult;
+  VoiceCommandService get commandService => _commandService;
 
   Future<bool> initialize() async {
     _isInitialized = await _speechService.initialize();
@@ -52,6 +66,7 @@ class VoiceProvider with ChangeNotifier {
   }
 
   Future<void> speak(String text) async {
+    if (text.isEmpty) return;
     _isSpeaking = true;
     notifyListeners();
     await _speechService.speak(text);
@@ -67,6 +82,38 @@ class VoiceProvider with ChangeNotifier {
 
   bool isWakeWord(String text) {
     return _speechService.isWakeWord(text, _wakeWord);
+  }
+
+  Future<VoiceAction> processCommand(
+    String text, {
+    required List<Event> events,
+    required String userId,
+    VoiceTemplate? Function(String)? matchTemplate,
+    Future<void> Function(Event)? onAddEvent,
+  }) async {
+    if (matchTemplate != null) {
+      final template = matchTemplate(text);
+      if (template != null && onAddEvent != null) {
+        final event = _eventFromTemplate(template, userId);
+        await onAddEvent(event);
+        return VoiceSpoken('Added ${event.title}');
+      }
+    }
+    return _commandService.processCommand(text, events);
+  }
+
+  Event _eventFromTemplate(VoiceTemplate template, String userId) {
+    final now = DateTime.now();
+    final parts = (template.defaultTime ?? '09:00').split(':');
+    final hour = int.tryParse(parts.elementAt(0)) ?? 9;
+    final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    return Event(
+      id: now.millisecondsSinceEpoch.toString(),
+      title: template.name,
+      dateTime: DateTime(now.year, now.month, now.day, hour, minute),
+      category: template.category,
+      userId: userId,
+    );
   }
 
   @override

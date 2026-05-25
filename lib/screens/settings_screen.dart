@@ -4,6 +4,7 @@ import 'share_calendar_screen.dart';
 import 'quick_poll_screen.dart';
 import 'family_calendar_screen.dart';
 import 'driving_mode_screen.dart';
+import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
@@ -34,22 +35,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   late Map<String, Color> _categoryColors;
 
+  bool _categoryColorsHydrated = false;
+
   @override
   void initState() {
     super.initState();
-    _categoryColors = Map.from(widget.categoryColors ?? {
-      'Work': const Color(0xFF1A73E8),
-      'Personal': const Color(0xFF34A853),
-      'Health': const Color(0xFFEA4335),
-      'Social': const Color(0xFF9334E6),
-      'Shopping': const Color(0xFFFBBC04),
-    });
+    _categoryColors = Map<String, Color>.from(
+      widget.categoryColors ?? const <String, Color>{},
+    );
   }
-  
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    if (!_categoryColorsHydrated && _categoryColors.isEmpty) {
+      final fromTheme = Theme.of(context).extension<CategoryColors>();
+      _categoryColors = Map<String, Color>.from(
+        fromTheme?.values ?? AppColors.defaultCategoryColors,
+      );
+      _categoryColorsHydrated = true;
+    }
   }
   
   @override

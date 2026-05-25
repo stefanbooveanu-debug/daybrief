@@ -5,6 +5,7 @@ import '../providers/event_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/claude_service.dart';
 import '../models/event.dart';
+import '../theme/app_theme.dart';
 
 class AddEventSheet extends StatefulWidget {
   final DateTime? initialDate;
@@ -19,10 +20,22 @@ class _AddEventSheetState extends State<AddEventSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
   final _aiInputController = TextEditingController();
   late TimeOfDay _selectedTime;
   late DateTime _selectedDate;
   bool _aiLoading = false;
+  String _selectedCategory = 'Other';
+  bool _reminderEnabled = true;
+
+  static const List<String> _categoryNames = [
+    'Work',
+    'Personal',
+    'Health',
+    'Social',
+    'Shopping',
+    'Other',
+  ];
 
   @override
   void initState() {
@@ -35,6 +48,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     _aiInputController.dispose();
     super.dispose();
   }
@@ -129,6 +143,30 @@ class _AddEventSheetState extends State<AddEventSheet> {
     }
   }
 
+  Widget _quickTimeChip(String label, int hour) {
+    final time = TimeOfDay(hour: hour, minute: 0);
+    final isSelected = _selectedTime.hour == hour && _selectedTime.minute == 0;
+    return ActionChip(
+      label: Text(label),
+      avatar: Icon(
+        Icons.schedule,
+        size: 16,
+        color: isSelected
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+      backgroundColor: isSelected
+          ? Theme.of(context).colorScheme.primary
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
+      labelStyle: TextStyle(
+        color: isSelected
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.onSurface,
+      ),
+      onPressed: () => setState(() => _selectedTime = time),
+    );
+  }
+
   Future<void> _addEvent() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -143,13 +181,16 @@ class _AddEventSheetState extends State<AddEventSheet> {
       _selectedTime.minute,
     );
 
+    final locationText = _locationController.text.trim();
+    final descriptionText = _descriptionController.text.trim();
     final event = Event(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
       dateTime: eventDateTime,
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
+      description: descriptionText.isEmpty ? null : descriptionText,
+      category: _selectedCategory,
+      location: locationText.isEmpty ? null : locationText,
+      reminderEnabled: _reminderEnabled,
       userId: authProvider.userId ?? '',
     );
 
@@ -173,7 +214,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
     final bgColor = isDark ? const Color(0xFF2A1A0A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF202124);
     final subtextColor = isDark ? Colors.grey[400]! : const Color(0xFF5F6368);
-    final fieldBg = isDark ? const Color(0xFF1A0E00) : const Color(0xFFFAFAFA);
+    final fieldBg = Theme.of(context).colorScheme.surfaceContainerHighest;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -185,12 +226,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
           color: bgColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -283,6 +325,46 @@ class _AddEventSheetState extends State<AddEventSheet> {
                 ),
               ),
               if (ClaudeService.isSupportedOnPlatform) const SizedBox(height: 16),
+              Text(
+                'Category',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: subtextColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 44,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _categoryNames.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final name = _categoryNames[index];
+                    final isSelected = _selectedCategory == name;
+                    final color = AppColors.getCategoryColor(name);
+                    return ChoiceChip(
+                      label: Text(name),
+                      avatar: Icon(
+                        AppColors.getCategoryIcon(name),
+                        size: 16,
+                        color: isSelected ? Colors.white : color,
+                      ),
+                      selected: isSelected,
+                      selectedColor: color,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : textColor,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                      onSelected: (_) =>
+                          setState(() => _selectedCategory = name),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
@@ -354,6 +436,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _quickTimeChip('Morning', 9),
+                  _quickTimeChip('Afternoon', 14),
+                  _quickTimeChip('Evening', 18),
+                  _quickTimeChip('Night', 21),
+                ],
+              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
@@ -368,6 +461,46 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   fillColor: fieldBg,
                 ),
                 maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _locationController,
+                decoration: InputDecoration(
+                  labelText: 'Location (optional)',
+                  hintText: 'Where is it?',
+                  prefixIcon: const Icon(
+                    Icons.place_outlined,
+                    color: Color(0xFF5F6368),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: fieldBg,
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _reminderEnabled,
+                onChanged: (v) => setState(() => _reminderEnabled = v),
+                title: Text(
+                  'Reminder',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+                subtitle: Text(
+                  'Notify me 1 hour before',
+                  style: TextStyle(fontSize: 12, color: subtextColor),
+                ),
+                secondary: Icon(
+                  Icons.notifications_active_outlined,
+                  color: subtextColor,
+                ),
               ),
               const SizedBox(height: 24),
               FilledButton(
@@ -384,7 +517,8 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
