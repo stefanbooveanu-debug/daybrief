@@ -196,12 +196,35 @@ void main() {
     });
 
     test('infers Work category from title keyword', () {
-      // Note: parseAddEvent strips the words schedule/book/event/meeting/call
-      // from the final title, so use a title keyword that survives.
       final e = svc.parseAddEvent('work standup at 10am', 'u');
       expect(e, isNotNull);
       expect(e!.category, 'Work');
       expect(e.dateTime.hour, 10);
+    });
+
+    test('"schedule meeting at 10am" keeps "meeting" in the title (Work)', () {
+      final e = svc.parseAddEvent('schedule meeting at 10am', 'u');
+      expect(e, isNotNull, reason: 'meeting should survive title stripping');
+      expect(e!.title.toLowerCase(), contains('meeting'));
+      expect(e.category, 'Work');
+      expect(e.dateTime.hour, 10);
+    });
+
+    test('"call John at 3pm" keeps "call" in the title (Work)', () {
+      final e = svc.parseAddEvent('call John at 3pm', 'u');
+      expect(e, isNotNull);
+      expect(e!.title.toLowerCase(), contains('call'));
+      expect(e.category, 'Work');
+      expect(e.dateTime.hour, 15);
+    });
+
+    test('strips only the "schedule" command verb, not noun keywords', () {
+      final e = svc.parseAddEvent('schedule meeting', 'u');
+      expect(e, isNotNull);
+      // The title should NOT start with "schedule".
+      expect(e!.title.toLowerCase().startsWith('schedule'), isFalse,
+          reason: 'command verb "schedule" should be stripped');
+      expect(e.title.toLowerCase(), contains('meeting'));
     });
 
     test('infers Social category for "birthday"', () {
@@ -230,9 +253,8 @@ void main() {
     });
 
     test('converts 12am → 00 and 12pm → 12', () {
-      // "call" is in the title strip-regex, so use a surviving keyword.
-      final am = svc.parseAddEvent('standup at 12am', 'u');
-      final pm = svc.parseAddEvent('standup at 12pm', 'u');
+      final am = svc.parseAddEvent('call at 12am', 'u');
+      final pm = svc.parseAddEvent('call at 12pm', 'u');
       expect(am, isNotNull, reason: 'AM parse returned null');
       expect(pm, isNotNull, reason: 'PM parse returned null');
       expect(am!.dateTime.hour, 0);
@@ -345,6 +367,25 @@ void main() {
       );
       final r = await svc.processCommand('daybrief insights', events)
           as VoiceSpoken;
+      expect(r.text, contains('exercise'));
+    });
+
+    test('>10 work AND zero health → BOTH busy-week and exercise messages',
+        () async {
+      // Regression test: previously the else-if hid one of the two messages.
+      final today = DateTime.now();
+      final events = List.generate(
+        12,
+        (i) => ev(
+          id: 'w$i',
+          title: 'Work $i',
+          dt: DateTime(today.year, today.month, today.day, 9 + (i % 8)),
+          category: 'Work',
+        ),
+      );
+      final r = await svc.processCommand('daybrief insights', events)
+          as VoiceSpoken;
+      expect(r.text, contains('busy week'));
       expect(r.text, contains('exercise'));
     });
   });

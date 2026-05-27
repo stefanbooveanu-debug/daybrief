@@ -70,7 +70,7 @@ void main() {
   });
 
   group('CategoryColors theme extension', () {
-    final ext = CategoryColors(AppColors.defaultCategoryColors);
+    const ext = CategoryColors(AppColors.defaultCategoryColors);
 
     test('colorFor returns the named color', () {
       expect(ext.colorFor('Work'),
@@ -86,7 +86,7 @@ void main() {
 
     test('colorFor on user-customized values returns the override', () {
       const customWork = Color(0xFF000001);
-      final custom = CategoryColors({
+      final custom = CategoryColors(<String, Color>{
         ...AppColors.defaultCategoryColors,
         'Work': customWork,
       });
@@ -107,8 +107,8 @@ void main() {
     });
 
     test('lerp(t=0) preserves left side, lerp(t=1) takes right side', () {
-      final a = CategoryColors({'Work': const Color(0xFF000000)});
-      final b = CategoryColors({'Work': const Color(0xFFFFFFFF)});
+      const a = CategoryColors(<String, Color>{'Work': Color(0xFF000000)});
+      const b = CategoryColors(<String, Color>{'Work': Color(0xFFFFFFFF)});
 
       final lerped0 = a.lerp(b, 0.0);
       final lerped1 = a.lerp(b, 1.0);

@@ -244,19 +244,19 @@ class VoiceCommandService {
     final healthEvents =
         weekEvents.where((e) => e.category == 'Health').length;
 
-    var insight =
-        "Here's your week at a glance. You have ${weekEvents.length} events, mostly $topCat. ";
-
+    final pieces = <String>[];
+    if (workEvents > 10) {
+      pieces.add("That's a busy week! Make sure to take breaks between meetings.");
+    }
     if (healthEvents == 0 && workEvents > 3) {
-      insight +=
-          "Consider adding some exercise time - you have no health activities scheduled.";
-    } else if (workEvents > 10) {
-      insight += "That's a busy week! Make sure to take breaks between meetings.";
-    } else {
-      insight += "You've got a good balance. Keep it up!";
+      pieces.add(
+          "Consider adding some exercise time - you have no health activities scheduled.");
+    }
+    if (pieces.isEmpty) {
+      pieces.add("You've got a good balance. Keep it up!");
     }
 
-    return insight;
+    return "Here's your week at a glance. You have ${weekEvents.length} events, mostly $topCat. ${pieces.join(' ')}";
   }
 
   TimeOfDay? _parseTime(String text, List<String> markers) {
@@ -316,10 +316,13 @@ class VoiceCommandService {
 
     if (titleWords.isEmpty) return null;
 
+    // Strip only command verbs ("schedule", "book", "event") so the actual
+    // event nouns ("meeting", "call", etc.) survive into the title.
     final title = titleWords
         .take(6)
         .join(' ')
-        .replaceAll(RegExp(r'(schedule|book|event|meeting|call)'), '')
+        .replaceAll(RegExp(r'\b(schedule|book|event)\b'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (title.isEmpty) return null;
 
