@@ -230,19 +230,22 @@ class VoiceCommandService {
 
     final categoryCount = <String, int>{};
     for (final e in weekEvents) {
-      final cat = e.category ?? 'Other';
+      final cat = (e.category ?? EventCategory.other).displayName;
       categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
     }
 
     final sorted = categoryCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final topCat = sorted.isNotEmpty ? sorted.first.key : 'work';
+    final topCat = sorted.isNotEmpty ? sorted.first.key : 'Other';
 
     final workEvents = weekEvents
-        .where((e) => e.category == 'Work' || e.category == 'Personal')
+        .where((e) =>
+            e.category == EventCategory.work ||
+            e.category == EventCategory.personal)
         .length;
-    final healthEvents =
-        weekEvents.where((e) => e.category == 'Health').length;
+    final healthEvents = weekEvents
+        .where((e) => e.category == EventCategory.health)
+        .length;
 
     final pieces = <String>[];
     if (workEvents > 10) {
@@ -382,36 +385,36 @@ class VoiceCommandService {
     );
   }
 
-  String _inferCategory(String title) {
+  EventCategory _inferCategory(String title) {
     final lower = title.toLowerCase();
     if (lower.contains('meeting') ||
         lower.contains('work') ||
         lower.contains('call') ||
         lower.contains('standup')) {
-      return 'Work';
+      return EventCategory.work;
     }
     if (lower.contains('gym') ||
         lower.contains('workout') ||
         lower.contains('run') ||
         lower.contains('doctor')) {
-      return 'Health';
+      return EventCategory.health;
     }
     if (lower.contains('lunch') ||
         lower.contains('dinner') ||
         lower.contains('coffee') ||
         lower.contains('date')) {
-      return 'Personal';
+      return EventCategory.personal;
     }
     if (lower.contains('birthday') ||
         lower.contains('party') ||
         lower.contains('hangout')) {
-      return 'Social';
+      return EventCategory.social;
     }
     if (lower.contains('shop') ||
         lower.contains('buy') ||
         lower.contains('grocery')) {
-      return 'Shopping';
+      return EventCategory.shopping;
     }
-    return 'Other';
+    return EventCategory.other;
   }
 }

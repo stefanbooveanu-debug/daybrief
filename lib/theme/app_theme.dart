@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/event.dart';
+
 class AppColors {
   AppColors._();
 
@@ -36,6 +38,9 @@ class AppColors {
     return defaultCategoryColors[category] ?? defaultCategoryColors['Other']!;
   }
 
+  static Color colorForCategory(EventCategory? category) =>
+      getCategoryColor((category ?? EventCategory.other).displayName);
+
   static IconData getCategoryIcon(String category) {
     switch (category) {
       case 'Work':
@@ -52,6 +57,9 @@ class AppColors {
         return Icons.event;
     }
   }
+
+  static IconData iconForCategory(EventCategory? category) =>
+      getCategoryIcon((category ?? EventCategory.other).displayName);
 }
 
 class AppTheme {
@@ -239,6 +247,9 @@ class CategoryColors extends ThemeExtension<CategoryColors> {
       (name != null ? values[name] : null) ??
       AppColors.defaultCategoryColors[name] ??
       AppColors.defaultCategoryColors['Other']!;
+
+  Color colorForCategory(EventCategory? category) =>
+      colorFor((category ?? EventCategory.other).displayName);
 
   @override
   CategoryColors copyWith({Map<String, Color>? values}) =>

@@ -33,12 +33,22 @@ class EventCard extends StatelessWidget {
   }
 
   Color _getEventColor(BuildContext context) {
-    final cat = event.category?.toLowerCase() ?? '';
-    if (cat.contains('work')) return _categoryColor(context, 'Work');
-    if (cat.contains('personal')) return _categoryColor(context, 'Personal');
-    if (cat.contains('health')) return _categoryColor(context, 'Health');
-    if (cat.contains('social')) return _categoryColor(context, 'Social');
-    if (cat.contains('shopping')) return _categoryColor(context, 'Shopping');
+    switch (event.category) {
+      case EventCategory.work:
+        return _categoryColor(context, 'Work');
+      case EventCategory.personal:
+        return _categoryColor(context, 'Personal');
+      case EventCategory.health:
+        return _categoryColor(context, 'Health');
+      case EventCategory.social:
+        return _categoryColor(context, 'Social');
+      case EventCategory.shopping:
+        return _categoryColor(context, 'Shopping');
+      case EventCategory.other:
+        return _categoryColor(context, 'Other');
+      case null:
+        break;
+    }
 
     final title = event.title.toLowerCase();
     if (title.contains('meeting') || title.contains('call') || title.contains('work') || title.contains('standup') || title.contains('deadline')) {

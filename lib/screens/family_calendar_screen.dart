@@ -19,9 +19,9 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
   ];
   
   List<Event> _familyEvents = [
-    Event(id: '1', title: 'Family Dinner', dateTime: DateTime.now().add(const Duration(days: 2, hours: 19)), description: 'Grandma coming over', category: 'Personal', userId: 'mom'),
-    Event(id: '2', title: 'Movie Night', dateTime: DateTime.now().add(const Duration(days: 5, hours: 20)), description: 'New Marvel movie', category: 'Social', userId: 'sister'),
-    Event(id: '3', title: 'Golf with Dad', dateTime: DateTime.now().add(const Duration(days: 7, hours: 9)), description: 'Sunday morning golf', category: 'Personal', userId: 'dad'),
+    Event(id: '1', title: 'Family Dinner', dateTime: DateTime.now().add(const Duration(days: 2, hours: 19)), description: 'Grandma coming over', category: EventCategory.personal, userId: 'mom'),
+    Event(id: '2', title: 'Movie Night', dateTime: DateTime.now().add(const Duration(days: 5, hours: 20)), description: 'New Marvel movie', category: EventCategory.social, userId: 'sister'),
+    Event(id: '3', title: 'Golf with Dad', dateTime: DateTime.now().add(const Duration(days: 7, hours: 9)), description: 'Sunday morning golf', category: EventCategory.personal, userId: 'dad'),
   ];
   
   @override
@@ -256,7 +256,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
                             id: DateTime.now().millisecondsSinceEpoch.toString(),
                             title: titleController.text.trim(),
                             dateTime: DateTime(selectedDate.year, selectedDate.month, selectedDate.day, selectedTime.hour, selectedTime.minute),
-                            category: 'Personal',
+                            category: EventCategory.personal,
                             userId: 'me',
                           );
                           setState(() => _familyEvents.add(event));

@@ -1,85 +1,181 @@
-enum RecurrenceType { none, daily, weekly, monthly, yearly }
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class Event {
-  final String id;
-  final String title;
-  final DateTime dateTime;
-  final String? description;
-  final String? category;
-  final bool reminderEnabled;
-  final bool isCompleted;
-  final String userId;
-  final String? location;
-  final RecurrenceType recurrenceType;
+part 'event.freezed.dart';
+part 'event.g.dart';
 
-  Event({
-    required this.id,
-    required this.title,
-    required this.dateTime,
-    this.description,
-    this.category,
-    this.reminderEnabled = true,
-    this.isCompleted = false,
-    required this.userId,
-    this.location,
-    this.recurrenceType = RecurrenceType.none,
-  });
+/// Canonical event category. Serialized via `.name` (NOT `.index`) so that
+/// renumbering values doesn't break stored data.
+enum EventCategory {
+  work,
+  personal,
+  health,
+  social,
+  shopping,
+  other;
 
-  DateTime? get reminderTime => reminderEnabled ? dateTime.subtract(const Duration(hours: 1)) : null;
+  /// Title-case label used by theme maps and settings UI keys.
+  String get displayName => switch (this) {
+        EventCategory.work => 'Work',
+        EventCategory.personal => 'Personal',
+        EventCategory.health => 'Health',
+        EventCategory.social => 'Social',
+        EventCategory.shopping => 'Shopping',
+        EventCategory.other => 'Other',
+      };
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'dateTime': dateTime.toIso8601String(),
-      'description': description,
-      'category': category,
-      'reminderEnabled': reminderEnabled,
-      'isCompleted': isCompleted,
-      'userId': userId,
-      'location': location,
-      'recurrenceType': recurrenceType.index,
-    };
+  /// Tolerant parser used by the JsonConverter. Accepts:
+  ///   - `null` → `null`
+  ///   - the canonical lowercase name (`"work"`)
+  ///   - the legacy title-cased form (`"Work"`)
+  ///   - any unknown string → `EventCategory.other`
+  static EventCategory? parse(Object? raw) {
+    if (raw == null) return null;
+    if (raw is EventCategory) return raw;
+    final s = raw.toString().toLowerCase().trim();
+    if (s.isEmpty) return null;
+    for (final v in EventCategory.values) {
+      if (v.name == s) return v;
+    }
+    return EventCategory.other;
   }
+}
 
-  factory Event.fromMap(Map<String, dynamic> map) {
-    return Event(
-      id: map['id'] ?? '',
-      title: map['title'] ?? '',
-      dateTime: DateTime.parse(map['dateTime']),
-      description: map['description'],
-      category: map['category'],
-      reminderEnabled: map['reminderEnabled'] ?? true,
-      isCompleted: map['isCompleted'] ?? false,
-      userId: map['userId'] ?? '',
-      location: map['location'],
-      recurrenceType: RecurrenceType.values[map['recurrenceType'] ?? 0],
-    );
+enum RecurrenceType {
+  none,
+  daily,
+  weekly,
+  monthly,
+  yearly;
+
+  static RecurrenceType parse(Object? raw) {
+    if (raw == null) return RecurrenceType.none;
+    if (raw is RecurrenceType) return raw;
+    // Legacy: stored as int index.
+    if (raw is int) {
+      if (raw >= 0 && raw < RecurrenceType.values.length) {
+        return RecurrenceType.values[raw];
+      }
+      return RecurrenceType.none;
+    }
+    final s = raw.toString().toLowerCase();
+    for (final v in RecurrenceType.values) {
+      if (v.name == s) return v;
+    }
+    return RecurrenceType.none;
   }
+}
 
-  Event copyWith({
-    String? id,
-    String? title,
-    DateTime? dateTime,
+/// Parses every shape we've ever stored a DateTime in:
+///   - native `DateTime`
+///   - ISO-8601 `String` (current local store format)
+///   - milliseconds-since-epoch `int`
+///   - Firestore `Timestamp`
+DateTime _parseEventDateTime(Object? raw) {
+  if (raw is DateTime) return raw;
+  if (raw is Timestamp) return raw.toDate();
+  if (raw is int) return DateTime.fromMillisecondsSinceEpoch(raw);
+  if (raw is String) return DateTime.parse(raw);
+  throw FormatException('Cannot parse dateTime from value of type '
+      '${raw.runtimeType}: $raw');
+}
+
+class _DateTimeConverter implements JsonConverter<DateTime, Object> {
+  const _DateTimeConverter();
+
+  @override
+  DateTime fromJson(Object json) => _parseEventDateTime(json);
+
+  @override
+  Object toJson(DateTime object) => object.toIso8601String();
+}
+
+class _EventCategoryConverter
+    implements JsonConverter<EventCategory?, Object?> {
+  const _EventCategoryConverter();
+
+  @override
+  EventCategory? fromJson(Object? json) => EventCategory.parse(json);
+
+  @override
+  Object? toJson(EventCategory? object) => object?.name;
+}
+
+class _RecurrenceConverter implements JsonConverter<RecurrenceType, Object?> {
+  const _RecurrenceConverter();
+
+  @override
+  RecurrenceType fromJson(Object? json) => RecurrenceType.parse(json);
+
+  @override
+  Object toJson(RecurrenceType object) => object.name;
+}
+
+@freezed
+sealed class Event with _$Event {
+  const Event._();
+
+  @JsonSerializable(explicitToJson: true)
+  const factory Event({
+    required String id,
+    required String title,
+    @_DateTimeConverter() required DateTime dateTime,
     String? description,
-    String? category,
-    bool? reminderEnabled,
-    bool? isCompleted,
-    String? userId,
+    @_EventCategoryConverter() EventCategory? category,
+    @Default(true) bool reminderEnabled,
+    @Default(false) bool isCompleted,
+    required String userId,
     String? location,
-    RecurrenceType? recurrenceType,
+    @_RecurrenceConverter()
+    @Default(RecurrenceType.none)
+    RecurrenceType recurrenceType,
+  }) = _Event;
+
+  /// Throws [FormatException] when required string fields are blank.
+  /// Use this factory instead of the default constructor when the values
+  /// come from untrusted sources (Firestore, voice parser, etc.).
+  factory Event.checked({
+    required String id,
+    required String title,
+    required DateTime dateTime,
+    required String userId,
+    String? description,
+    EventCategory? category,
+    bool reminderEnabled = true,
+    bool isCompleted = false,
+    String? location,
+    RecurrenceType recurrenceType = RecurrenceType.none,
   }) {
+    if (id.trim().isEmpty) {
+      throw const FormatException('Event.id must not be empty');
+    }
+    if (title.trim().isEmpty) {
+      throw const FormatException('Event.title must not be empty');
+    }
+    if (userId.trim().isEmpty) {
+      throw const FormatException('Event.userId must not be empty');
+    }
     return Event(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      dateTime: dateTime ?? this.dateTime,
-      description: description ?? this.description,
-      category: category ?? this.category,
-      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-      isCompleted: isCompleted ?? this.isCompleted,
-      userId: userId ?? this.userId,
-      location: location ?? this.location,
-      recurrenceType: recurrenceType ?? this.recurrenceType,
+      id: id,
+      title: title,
+      dateTime: dateTime,
+      userId: userId,
+      description: description,
+      category: category,
+      reminderEnabled: reminderEnabled,
+      isCompleted: isCompleted,
+      location: location,
+      recurrenceType: recurrenceType,
     );
   }
+
+  factory Event.fromJson(Map<String, dynamic> json) => _$EventFromJson(json);
+
+  /// Backwards-compat shim for code that hasn't migrated yet.
+  factory Event.fromMap(Map<String, dynamic> map) => Event.fromJson(map);
+
+  Map<String, dynamic> toMap() => toJson();
+
+  DateTime? get reminderTime =>
+      reminderEnabled ? dateTime.subtract(const Duration(hours: 1)) : null;
 }

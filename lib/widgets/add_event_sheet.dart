@@ -25,16 +25,16 @@ class _AddEventSheetState extends State<AddEventSheet> {
   late TimeOfDay _selectedTime;
   late DateTime _selectedDate;
   bool _aiLoading = false;
-  String _selectedCategory = 'Other';
+  EventCategory _selectedCategory = EventCategory.other;
   bool _reminderEnabled = true;
 
-  static const List<String> _categoryNames = [
-    'Work',
-    'Personal',
-    'Health',
-    'Social',
-    'Shopping',
-    'Other',
+  static const List<EventCategory> _categories = [
+    EventCategory.work,
+    EventCategory.personal,
+    EventCategory.health,
+    EventCategory.social,
+    EventCategory.shopping,
+    EventCategory.other,
   ];
 
   @override
@@ -82,7 +82,12 @@ class _AddEventSheetState extends State<AddEventSheet> {
     // Auto-fill the form with parsed data
     setState(() {
       _titleController.text = event.title;
-      if (event.description != null) _descriptionController.text = event.description!;
+      if (event.description != null) {
+        _descriptionController.text = event.description!;
+      }
+      if (event.category != null) {
+        _selectedCategory = event.category!;
+      }
       _selectedDate = event.dateTime;
       _selectedTime = TimeOfDay.fromDateTime(event.dateTime);
       _aiInputController.clear();
@@ -338,16 +343,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
                 height: 44,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _categoryNames.length,
+                  itemCount: _categories.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
-                    final name = _categoryNames[index];
-                    final isSelected = _selectedCategory == name;
-                    final color = AppColors.getCategoryColor(name);
+                    final category = _categories[index];
+                    final name = category.displayName;
+                    final isSelected = _selectedCategory == category;
+                    final color = AppColors.colorForCategory(category);
                     return ChoiceChip(
                       label: Text(name),
                       avatar: Icon(
-                        AppColors.getCategoryIcon(name),
+                        AppColors.iconForCategory(category),
                         size: 16,
                         color: isSelected ? Colors.white : color,
                       ),
@@ -359,7 +365,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                             isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                       onSelected: (_) =>
-                          setState(() => _selectedCategory = name),
+                          setState(() => _selectedCategory = category),
                     );
                   },
                 ),

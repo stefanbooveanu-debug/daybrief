@@ -13,7 +13,7 @@ void main() {
     String id = 'e1',
     String title = 'Standup',
     DateTime? dt,
-    String? category = 'Work',
+    EventCategory? category = EventCategory.work,
     String? description,
   }) =>
       Event(
@@ -182,7 +182,7 @@ void main() {
       expect(e!.title.toLowerCase(), contains('lunch'));
       expect(e.dateTime.hour, 13);
       expect(e.dateTime.minute, 0);
-      expect(e.category, 'Personal');
+      expect(e.category, EventCategory.personal);
       expect(e.userId, 'u1');
       // tomorrow
       final tomorrow = DateTime.now().add(const Duration(days: 1));
@@ -191,14 +191,14 @@ void main() {
 
     test('infers Health category for "gym"', () {
       final e = svc.parseAddEvent('gym today at 6pm', 'u');
-      expect(e!.category, 'Health');
+      expect(e!.category, EventCategory.health);
       expect(e.dateTime.hour, 18);
     });
 
     test('infers Work category from title keyword', () {
       final e = svc.parseAddEvent('work standup at 10am', 'u');
       expect(e, isNotNull);
-      expect(e!.category, 'Work');
+      expect(e!.category, EventCategory.work);
       expect(e.dateTime.hour, 10);
     });
 
@@ -206,7 +206,7 @@ void main() {
       final e = svc.parseAddEvent('schedule meeting at 10am', 'u');
       expect(e, isNotNull, reason: 'meeting should survive title stripping');
       expect(e!.title.toLowerCase(), contains('meeting'));
-      expect(e.category, 'Work');
+      expect(e.category, EventCategory.work);
       expect(e.dateTime.hour, 10);
     });
 
@@ -214,7 +214,7 @@ void main() {
       final e = svc.parseAddEvent('call John at 3pm', 'u');
       expect(e, isNotNull);
       expect(e!.title.toLowerCase(), contains('call'));
-      expect(e.category, 'Work');
+      expect(e.category, EventCategory.work);
       expect(e.dateTime.hour, 15);
     });
 
@@ -229,12 +229,12 @@ void main() {
 
     test('infers Social category for "birthday"', () {
       final e = svc.parseAddEvent('birthday party at 7pm', 'u');
-      expect(e!.category, 'Social');
+      expect(e!.category, EventCategory.social);
     });
 
     test('infers Shopping category for "grocery"', () {
       final e = svc.parseAddEvent('grocery shopping at 5pm', 'u');
-      expect(e!.category, 'Shopping');
+      expect(e!.category, EventCategory.shopping);
     });
 
     test('falls back to 9am default when no time is given', () {
@@ -339,14 +339,14 @@ void main() {
             id: 'w$i',
             title: 'Meeting $i',
             dt: DateTime(today.year, today.month, today.day, 9 + (i % 8)),
-            category: 'Work',
+            category: EventCategory.work,
           ),
         ),
         ev(
           id: 'gym',
           title: 'Gym',
           dt: DateTime(today.year, today.month, today.day, 18),
-          category: 'Health',
+          category: EventCategory.health,
         ),
       ];
       final r = await svc.processCommand('daybrief insights', events)
@@ -362,7 +362,7 @@ void main() {
           id: 'w$i',
           title: 'Work $i',
           dt: DateTime(today.year, today.month, today.day, 9 + i),
-          category: 'Work',
+          category: EventCategory.work,
         ),
       );
       final r = await svc.processCommand('daybrief insights', events)
@@ -380,7 +380,7 @@ void main() {
           id: 'w$i',
           title: 'Work $i',
           dt: DateTime(today.year, today.month, today.day, 9 + (i % 8)),
-          category: 'Work',
+          category: EventCategory.work,
         ),
       );
       final r = await svc.processCommand('daybrief insights', events)

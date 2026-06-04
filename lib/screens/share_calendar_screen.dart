@@ -149,9 +149,10 @@ class _ShareCalendarScreenState extends State<ShareCalendarScreen> {
     );
   }
   
-  Color _getCategoryColor(String? category) {
-    return Theme.of(context).extension<CategoryColors>()?.colorFor(category) ??
-        AppColors.defaultCategoryColors[category] ??
-        AppColors.defaultCategoryColors['Other']!;
+  Color _getCategoryColor(EventCategory? category) {
+    return Theme.of(context).extension<CategoryColors>()?.colorForCategory(
+              category,
+            ) ??
+        AppColors.colorForCategory(category);
   }
 }

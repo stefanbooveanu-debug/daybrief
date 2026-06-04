@@ -16,7 +16,7 @@ void main() {
   Event ev({
     String id = 'e1',
     String title = 'Standup',
-    String? category = 'Work',
+    EventCategory? category = EventCategory.work,
     DateTime? dt,
   }) =>
       Event(
@@ -62,7 +62,7 @@ void main() {
         (tester) async {
       const overrideColor = Color(0xFFAA0000);
       await tester.pumpWidget(_wrap(EventCard(
-        event: ev(category: 'Work'),
+        event: ev(category: EventCategory.work),
         onDelete: () {},
         categoryColors: const {'Work': overrideColor},
       )));
@@ -73,7 +73,7 @@ void main() {
     testWidgets('falls back to theme CategoryColors when no override',
         (tester) async {
       await tester.pumpWidget(_wrap(EventCard(
-        event: ev(category: 'Work'),
+        event: ev(category: EventCategory.work),
         onDelete: () {},
       )));
       expect(find.byType(EventCard), findsOneWidget);
@@ -81,12 +81,13 @@ void main() {
 
     testWidgets('renders for every canonical category without throwing',
         (tester) async {
-      for (final cat in const ['Work', 'Personal', 'Health', 'Social', 'Shopping', 'Other']) {
+      for (final cat in EventCategory.values) {
         await tester.pumpWidget(_wrap(EventCard(
-          event: ev(category: cat, title: cat),
+          event: ev(category: cat, title: cat.displayName),
           onDelete: () {},
         )));
-        expect(find.text(cat), findsOneWidget, reason: 'failed for $cat');
+        expect(find.text(cat.displayName), findsOneWidget,
+            reason: 'failed for ${cat.displayName}');
       }
     });
 

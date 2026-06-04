@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:day_brief/models/event.dart';
 import 'package:day_brief/models/voice_template.dart';
 
 void main() {
@@ -8,13 +9,13 @@ void main() {
         id: 'a1',
         name: 'Gym',
         phrase: 'workout',
-        category: 'Health',
+        category: EventCategory.health,
         defaultTime: '18:00',
       );
       expect(t.id, 'a1');
       expect(t.name, 'Gym');
       expect(t.phrase, 'workout');
-      expect(t.category, 'Health');
+      expect(t.category, EventCategory.health);
       expect(t.defaultTime, '18:00');
       expect(t.isCustom, isFalse);
     });
@@ -24,7 +25,7 @@ void main() {
         id: 'a1',
         name: 'Gym',
         phrase: 'workout',
-        category: 'Health',
+        category: EventCategory.health,
         defaultTime: '18:00',
         isCustom: true,
       );
@@ -38,14 +39,11 @@ void main() {
       expect(restored.isCustom, t.isCustom);
     });
 
-    test('fromMap with all-null map falls back to defaults', () {
-      final t = VoiceTemplate.fromMap(<String, dynamic>{});
-      expect(t.id, '');
-      expect(t.name, '');
-      expect(t.phrase, '');
-      expect(t.category, isNull);
-      expect(t.defaultTime, isNull);
-      expect(t.isCustom, isFalse);
+    test('fromMap with empty map throws (required fields)', () {
+      expect(
+        () => VoiceTemplate.fromMap(<String, dynamic>{}),
+        throwsA(isA<TypeError>()),
+      );
     });
 
     group('copyWith', () {
@@ -53,7 +51,7 @@ void main() {
         id: '1',
         name: 'Standup',
         phrase: 'standup',
-        category: 'Work',
+        category: EventCategory.work,
         defaultTime: '09:00',
       );
 
@@ -74,9 +72,9 @@ void main() {
         expect(clone.name, original.name);
       });
 
-      test('passing null keeps old value (documented `??` behavior)', () {
+      test('passing null clears nullable category (freezed copyWith)', () {
         final clone = original.copyWith(category: null);
-        expect(clone.category, 'Work');
+        expect(clone.category, isNull);
       });
     });
 
@@ -116,7 +114,13 @@ void main() {
       });
 
       test('categories come from the canonical set', () {
-        const allowed = {'Work', 'Personal', 'Health', 'Social', 'Shopping'};
+        const allowed = {
+          EventCategory.work,
+          EventCategory.personal,
+          EventCategory.health,
+          EventCategory.social,
+          EventCategory.shopping,
+        };
         for (final t in templates) {
           expect(allowed.contains(t.category), isTrue,
               reason: '${t.name} has unknown category ${t.category}');

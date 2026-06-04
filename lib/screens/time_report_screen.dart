@@ -21,16 +21,14 @@ class TimeReportScreen extends StatelessWidget {
     
     final categoryCount = <String, int>{};
     for (final e in weekEvents) {
-      final cat = e.category ?? 'Other';
+      final cat = (e.category ?? EventCategory.other).displayName;
       categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
     }
     
     final sorted = categoryCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final categoryColors = Theme.of(context).extension<CategoryColors>();
-    Color colorFor(String name) =>
-        categoryColors?.colorFor(name) ??
-        AppColors.defaultCategoryColors[name] ??
-        AppColors.defaultCategoryColors['Other']!;
+    Color colorFor(String name) => categoryColors?.colorFor(name) ??
+        AppColors.getCategoryColor(name);
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),

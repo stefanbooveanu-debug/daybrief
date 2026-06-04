@@ -170,7 +170,7 @@ class EventProvider with ChangeNotifier {
 
     final stats = <String, int>{};
     for (final event in weekEvents) {
-      final category = event.category ?? 'Other';
+      final category = (event.category ?? EventCategory.other).displayName;
       stats[category] = (stats[category] ?? 0) + 1;
     }
     return stats;

@@ -151,14 +151,15 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
     );
   }
 
-  Color _getCategoryColor(String? category) {
-    return Theme.of(context).extension<CategoryColors>()?.colorFor(category) ??
-        AppColors.defaultCategoryColors[category] ??
-        AppColors.defaultCategoryColors['Other']!;
+  Color _getCategoryColor(EventCategory? category) {
+    return Theme.of(context).extension<CategoryColors>()?.colorForCategory(
+              category,
+            ) ??
+        AppColors.colorForCategory(category);
   }
 
-  IconData _getCategoryIcon(String? category) {
-    return AppColors.getCategoryIcon(category ?? '');
+  IconData _getCategoryIcon(EventCategory? category) {
+    return AppColors.iconForCategory(category);
   }
 
   void _deleteTemplate(String id) {
@@ -171,7 +172,7 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
   void _showAddTemplateDialog(BuildContext context) {
     final nameController = TextEditingController();
     final phraseController = TextEditingController();
-    String selectedCategory = 'Work';
+    EventCategory selectedCategory = EventCategory.work;
     String? defaultTime = '09:00';
 
     showDialog(
@@ -199,13 +200,17 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
+                DropdownButtonFormField<EventCategory>(
                   value: selectedCategory,
                   decoration: const InputDecoration(labelText: 'Category'),
-                  items: ['Work', 'Personal', 'Health', 'Social', 'Shopping', 'Other']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  items: EventCategory.values
+                      .map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c.displayName),
+                          ))
                       .toList(),
-                  onChanged: (v) => setDialogState(() => selectedCategory = v!),
+                  onChanged: (v) =>
+                      setDialogState(() => selectedCategory = v!),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String?>(

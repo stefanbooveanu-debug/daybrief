@@ -60,7 +60,7 @@ class ClaudeService {
         'title': event.title,
         'dateTime': event.dateTime.toIso8601String(),
         if (event.description != null) 'description': event.description,
-        if (event.category != null) 'category': event.category,
+        if (event.category != null) 'category': event.category!.name,
       };
 
   /// Parse natural language text into an Event object.
@@ -82,7 +82,8 @@ class ClaudeService {
         title: eventJson['title']?.toString() ?? 'New Event',
         dateTime: DateTime.parse(eventJson['dateTime'].toString()),
         description: eventJson['description']?.toString(),
-        category: eventJson['category']?.toString() ?? 'Other',
+        category: EventCategory.parse(eventJson['category']) ??
+            EventCategory.other,
         location: eventJson['location']?.toString(),
         userId: eventJson['userId']?.toString() ?? userId,
       );

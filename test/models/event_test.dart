@@ -8,7 +8,7 @@ void main() {
       String title = 'Standup',
       DateTime? dt,
       String? description = 'Team sync',
-      String? category = 'Work',
+      EventCategory? category = EventCategory.work,
       bool reminderEnabled = true,
       bool isCompleted = false,
       String userId = 'u1',
@@ -34,7 +34,7 @@ void main() {
       expect(e.title, 'Standup');
       expect(e.dateTime, DateTime(2026, 5, 25, 9, 30));
       expect(e.description, 'Team sync');
-      expect(e.category, 'Work');
+      expect(e.category, EventCategory.work);
       expect(e.reminderEnabled, isTrue);
       expect(e.isCompleted, isFalse);
       expect(e.userId, 'u1');
@@ -96,27 +96,28 @@ void main() {
         expect(e.toMap()['dateTime'], '2026-05-25T09:30:00.000');
       });
 
-      test('serializes recurrenceType as its enum index', () {
+      test('serializes recurrenceType as its enum name', () {
         for (final rt in RecurrenceType.values) {
           final e = sample(recurrence: rt);
-          expect(e.toMap()['recurrenceType'], rt.index,
-              reason: 'expected index for $rt');
+          expect(e.toMap()['recurrenceType'], rt.name,
+              reason: 'expected name for $rt');
         }
       });
 
-      test('fromMap with nulls falls back to safe defaults', () {
+      test('serializes category as enum name', () {
+        final e = sample(category: EventCategory.health);
+        expect(e.toMap()['category'], 'health');
+      });
+
+      test('fromMap parses legacy title-cased category strings', () {
         final restored = Event.fromMap({
-          'dateTime': DateTime(2026, 1, 2, 3, 4).toIso8601String(),
+          'id': '1',
+          'title': 't',
+          'dateTime': DateTime(2026, 1, 1).toIso8601String(),
+          'userId': 'u',
+          'category': 'Work',
         });
-        expect(restored.id, '');
-        expect(restored.title, '');
-        expect(restored.description, isNull);
-        expect(restored.category, isNull);
-        expect(restored.reminderEnabled, isTrue);
-        expect(restored.isCompleted, isFalse);
-        expect(restored.userId, '');
-        expect(restored.location, isNull);
-        expect(restored.recurrenceType, RecurrenceType.none);
+        expect(restored.category, EventCategory.work);
       });
 
       test('fromMap accepts all RecurrenceType indices', () {
@@ -132,10 +133,10 @@ void main() {
         }
       });
 
-      test('fromMap throws on malformed dateTime (current behavior)', () {
+      test('fromMap throws on malformed or incomplete JSON', () {
         expect(
           () => Event.fromMap({'dateTime': 'not-a-date'}),
-          throwsA(isA<FormatException>()),
+          throwsA(anything),
         );
       });
     });
@@ -170,11 +171,10 @@ void main() {
         expect(e.userId, 'u1');
       });
 
-      test('passing null does NOT clear nullable fields (uses old value)', () {
-        // Documented current behavior — copyWith uses `??`, so null = keep.
+      test('passing null clears nullable fields (freezed copyWith)', () {
         final original = sample(description: 'keep me');
         final clone = original.copyWith(description: null);
-        expect(clone.description, 'keep me');
+        expect(clone.description, isNull);
       });
     });
 
