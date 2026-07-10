@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../models/event.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
 import '../services/claude_service.dart';
@@ -17,8 +18,8 @@ import 'driving_mode_screen.dart';
 import 'family_calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final Map<String, Color>? categoryColors;
-  final Function(Map<String, Color>)? onCategoryColorsChanged;
+  final Map<EventCategory, Color>? categoryColors;
+  final Function(Map<EventCategory, Color>)? onCategoryColorsChanged;
   final Function(bool)? onThemeChanged;
 
   const HomeScreen({
@@ -35,7 +36,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   DateTime _selectedDay = DateTime.now();
   int _currentView = 0;
-  bool _showThemeAnimation = false;
 
   late AnimationController _fabController;
   late Animation<double> _fabAnim;
@@ -97,11 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _toggleTheme() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    setState(() => _showThemeAnimation = true);
     widget.onThemeChanged?.call(!isDark);
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) setState(() => _showThemeAnimation = false);
-    });
   }
 
   Future<void> _showAISummary() async {
@@ -129,7 +125,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                    child: const Icon(Icons.auto_awesome,
+                        color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -154,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           children: [
                             CircularProgressIndicator(color: Color(0xFF9334E6)),
                             SizedBox(height: 12),
-                            Text('Thinking...', style: TextStyle(color: Colors.grey)),
+                            Text('Thinking...',
+                                style: TextStyle(color: Colors.grey)),
                           ],
                         ),
                       ),
@@ -177,7 +175,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onPressed: () => Navigator.pop(context),
                   child: const Text(
                     'Close',
-                    style: TextStyle(color: Color(0xFF9334E6), fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Color(0xFF9334E6), fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -190,11 +189,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _navigateToView(int view) {
     if (view == 1) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const WeekViewScreen()));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const WeekViewScreen()));
     } else if (view == 2) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const MonthViewScreen()));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const MonthViewScreen()));
     }
     setState(() => _currentView = view);
   }
@@ -202,15 +201,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? const Color(0xFF1A0E00)
-        : const Color(0xFFFFF5EC);
-    final cardColor = isDark
-        ? const Color(0xFF2A1A0A)
-        : Colors.white;
-    final textColor = isDark
-        ? const Color(0xFFFFF5EC)
-        : const Color(0xFF1A0A00);
+    final bgColor = isDark ? const Color(0xFF1A0E00) : const Color(0xFFFFF5EC);
+    final cardColor = isDark ? const Color(0xFF2A1A0A) : Colors.white;
+    final textColor =
+        isDark ? const Color(0xFFFFF5EC) : const Color(0xFF1A0A00);
 
     return SmoothThemeTransition(
       isDark: isDark,
@@ -313,16 +307,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildHeaderButton(
             icon: Icons.settings_rounded,
             onTap: () async {
-              final result = await Navigator.push<Map<String, dynamic>>(context,
-                  MaterialPageRoute(builder: (_) => SettingsScreen(
-                    categoryColors: widget.categoryColors ?? {},
-                    onThemeChanged: widget.onThemeChanged,
-                    onColorsChanged: widget.onCategoryColorsChanged,
-                  )));
+              final result = await Navigator.push<Map<String, dynamic>>(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => SettingsScreen(
+                            categoryColors: widget.categoryColors ?? {},
+                            onThemeChanged: widget.onThemeChanged,
+                            onColorsChanged: widget.onCategoryColorsChanged,
+                          )));
               if (result != null && mounted) {
                 // Update colors if changed
                 if (result['categoryColors'] != null) {
-                  final newColors = Map<String, Color>.from(result['categoryColors'] as Map);
+                  final newColors = Map<EventCategory, Color>.from(
+                    result['categoryColors'] as Map<EventCategory, Color>,
+                  );
                   widget.onCategoryColorsChanged?.call(newColors);
                 }
                 // Theme change is handled via callback in main.dart
@@ -347,13 +345,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF2A1A0A)
-              : Colors.white,
+          color: isDark ? const Color(0xFF2A1A0A) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF8C69).withOpacity(0.1),
+              color: const Color(0xFFFF8C69).withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -374,13 +370,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF2A1A0A)
-              : Colors.white,
+          color: isDark ? const Color(0xFF2A1A0A) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -403,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFFF8C69).withOpacity(0.3),
+                              color: const Color(0xFFFF8C69).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -415,12 +409,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.grey[500],
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : Colors.grey[500],
                     ),
                   ),
                 ),
@@ -529,9 +520,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               event: events[index],
               isDark: isDark,
               categoryColors: widget.categoryColors ?? {},
-              onDelete: () => context
-                  .read<EventProvider>()
-                  .deleteEvent(events[index].id),
+              onDelete: () =>
+                  context.read<EventProvider>().deleteEvent(events[index].id),
             );
           },
         );
@@ -548,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFB347).withOpacity(0.1),
+              color: const Color(0xFFFFB347).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -592,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF8C69).withOpacity(0.5),
+            color: const Color(0xFFFF8C69).withValues(alpha: 0.5),
             blurRadius: 20,
             spreadRadius: 2,
             offset: const Offset(0, 6),
@@ -613,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -668,9 +658,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           Icon(
             icon,
-            color: isActive
-                ? const Color(0xFFFF8C69)
-                : Colors.grey[400],
+            color: isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
             size: 22,
           ),
           const SizedBox(height: 4),
@@ -679,9 +667,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             style: TextStyle(
               fontSize: 10,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: isActive
-                  ? const Color(0xFFFF8C69)
-                  : Colors.grey[400],
+              color: isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
             ),
           ),
         ],

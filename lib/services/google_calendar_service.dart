@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/event.dart';
+import '../utils/logger.dart';
 
 class GoogleCalendarService {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -19,7 +20,7 @@ class GoogleCalendarService {
       final auth = await _currentUser!.authentication;
       _accessToken = auth.accessToken;
     } catch (error) {
-      print('Error signing in: $error');
+      DayBriefLog.error('Error signing in', error: error);
     }
   }
 
@@ -34,7 +35,8 @@ class GoogleCalendarService {
 
     try {
       final response = await http.post(
-        Uri.parse('https://www.googleapis.com/calendar/v3/calendars/primary/events'),
+        Uri.parse(
+            'https://www.googleapis.com/calendar/v3/calendars/primary/events'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',
@@ -43,14 +45,14 @@ class GoogleCalendarService {
       );
       return response.statusCode == 200;
     } catch (error) {
-      print('Error syncing event: $error');
+      DayBriefLog.error('Error syncing event', error: error);
       return false;
     }
   }
 
   Map<String, dynamic> _eventToCalendarJson(Event event) {
     final endTime = event.dateTime.add(const Duration(hours: 1));
-    
+
     return {
       'summary': event.title,
       'description': event.description ?? '',
@@ -70,19 +72,20 @@ class GoogleCalendarService {
     buffer.writeln('BEGIN:VCALENDAR');
     buffer.writeln('VERSION:2.0');
     buffer.writeln('PRODID:-//DayBrief//Calendar//EN');
-    
+
     for (final event in events) {
       buffer.writeln('BEGIN:VEVENT');
       buffer.writeln('UID:${event.id}@daybrief');
       buffer.writeln('DTSTART:${_formatIcsDateTime(event.dateTime)}');
-      buffer.writeln('DTEND:${_formatIcsDateTime(event.dateTime.add(const Duration(hours: 1)))}');
+      buffer.writeln(
+          'DTEND:${_formatIcsDateTime(event.dateTime.add(const Duration(hours: 1)))}');
       buffer.writeln('SUMMARY:${event.title}');
       if (event.description != null) {
         buffer.writeln('DESCRIPTION:${event.description}');
       }
       buffer.writeln('END:VEVENT');
     }
-    
+
     buffer.writeln('END:VCALENDAR');
     return buffer.toString();
   }
@@ -94,19 +97,21 @@ class GoogleCalendarService {
   List<Event> parseIcsEvents(String icsContent) {
     final events = <Event>[];
     final lines = icsContent.split('\n');
-    
+
     String? currentEventUid;
     DateTime? start;
     String title = '';
     String? description;
-    
+
     for (final line in lines) {
       if (line.startsWith('BEGIN:VEVENT')) {
         currentEventUid = DateTime.now().millisecondsSinceEpoch.toString();
         start = null;
         title = '';
         description = null;
-      } else if (line.startsWith('END:VEVENT') && currentEventUid != null && start != null) {
+      } else if (line.startsWith('END:VEVENT') &&
+          currentEventUid != null &&
+          start != null) {
         events.add(Event(
           id: currentEventUid,
           title: title.isNotEmpty ? title : 'Imported Event',
@@ -125,7 +130,7 @@ class GoogleCalendarService {
         }
       }
     }
-    
+
     return events;
   }
 

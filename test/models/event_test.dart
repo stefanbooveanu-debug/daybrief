@@ -46,7 +46,7 @@ void main() {
       final e = Event(
         id: '1',
         title: 't',
-        dateTime: DateTime(2026, 1, 1),
+        dateTime: DateTime(2026),
         userId: 'u',
       );
       expect(e.reminderEnabled, isTrue);
@@ -59,8 +59,8 @@ void main() {
 
     group('reminderTime', () {
       test('is 1 hour before dateTime when reminderEnabled', () {
-        final e = sample(dt: DateTime(2026, 5, 25, 10, 0));
-        expect(e.reminderTime, DateTime(2026, 5, 25, 9, 0));
+        final e = sample(dt: DateTime(2026, 5, 25, 10));
+        expect(e.reminderTime, DateTime(2026, 5, 25, 9));
       });
 
       test('is null when reminderEnabled is false', () {
@@ -113,7 +113,7 @@ void main() {
         final restored = Event.fromMap({
           'id': '1',
           'title': 't',
-          'dateTime': DateTime(2026, 1, 1).toIso8601String(),
+          'dateTime': DateTime(2026).toIso8601String(),
           'userId': 'u',
           'category': 'Work',
         });
@@ -125,7 +125,7 @@ void main() {
           final restored = Event.fromMap({
             'id': 'x',
             'title': 't',
-            'dateTime': DateTime(2026, 1, 1).toIso8601String(),
+            'dateTime': DateTime(2026).toIso8601String(),
             'userId': 'u',
             'recurrenceType': i,
           });

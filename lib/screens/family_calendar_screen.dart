@@ -18,7 +18,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
     {'name': 'Sister', 'avatar': '👧', 'color': const Color(0xFF9C27B0)},
   ];
   
-  List<Event> _familyEvents = [
+  final List<Event> _familyEvents = [
     Event(id: '1', title: 'Family Dinner', dateTime: DateTime.now().add(const Duration(days: 2, hours: 19)), description: 'Grandma coming over', category: EventCategory.personal, userId: 'mom'),
     Event(id: '2', title: 'Movie Night', dateTime: DateTime.now().add(const Duration(days: 5, hours: 20)), description: 'New Marvel movie', category: EventCategory.social, userId: 'sister'),
     Event(id: '3', title: 'Golf with Dad', dateTime: DateTime.now().add(const Duration(days: 7, hours: 9)), description: 'Sunday morning golf', category: EventCategory.personal, userId: 'dad'),
@@ -69,7 +69,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFFE91E63).withOpacity(0.8), const Color(0xFF2196F3).withOpacity(0.8)],
+          colors: [const Color(0xFFE91E63).withValues(alpha: 0.8), const Color(0xFF2196F3).withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -78,7 +78,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Family Members', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+          Text('Family Members', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
           const SizedBox(height: 12),
           Row(
             children: _familyMembers.map((member) => Padding(
@@ -118,7 +118,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: member['color'].withOpacity(0.3), width: 2),
+        border: Border.all(color: member['color'].withValues(alpha: 0.3), width: 2),
       ),
       child: Row(
         children: [
@@ -126,7 +126,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: member['color'].withOpacity(0.2),
+              color: member['color'].withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(child: Text(member['avatar'], style: const TextStyle(fontSize: 24))),
@@ -143,7 +143,7 @@ class _FamilyCalendarScreenState extends State<FamilyCalendarScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: member['color'].withOpacity(0.2),
+                        color: member['color'].withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(member['name'], style: TextStyle(fontSize: 10, color: member['color'], fontWeight: FontWeight.bold)),

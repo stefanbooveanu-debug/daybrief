@@ -161,8 +161,7 @@ class _$EventCopyWithImpl<$Res> implements $EventCopyWith<$Res> {
 }
 
 /// @nodoc
-
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 class _Event extends Event {
   const _Event(
       {required this.id,

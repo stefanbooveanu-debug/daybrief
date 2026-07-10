@@ -9,7 +9,7 @@ import '../models/event.dart';
 class EventProvider with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   List<Event> _events = [];
   bool _isLoading = false;
   String? _error;
@@ -53,7 +53,7 @@ class EventProvider with ChangeNotifier {
 
   void _listenToFirestoreEvents(String userId) {
     _firestoreSubscription?.cancel();
-    
+
     _firestoreSubscription = _firestore
         .collection('events')
         .where('userId', isEqualTo: userId)
@@ -101,7 +101,7 @@ class EventProvider with ChangeNotifier {
   Future<void> addEvent(Event event) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      
+
       if (user != null) {
         // Save to Firestore
         final eventData = event.toMap();
@@ -125,7 +125,7 @@ class EventProvider with ChangeNotifier {
   Future<void> updateEvent(Event event) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      
+
       if (user != null) {
         final eventData = event.toMap();
         eventData['userId'] = user.uid;
@@ -145,7 +145,7 @@ class EventProvider with ChangeNotifier {
   Future<void> deleteEvent(String eventId) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      
+
       if (user != null) {
         await _firestore.collection('events').doc(eventId).delete();
       } else {
@@ -159,18 +159,19 @@ class EventProvider with ChangeNotifier {
     }
   }
 
-  Map<String, int> getCategoryStats({int days = 7}) {
+  Map<EventCategory, int> getCategoryStats({int days = 7}) {
     final now = DateTime.now();
     final startDate = now.subtract(Duration(days: now.weekday - 1));
     final endDate = startDate.add(Duration(days: days));
-    
-    final weekEvents = _events.where((e) => 
-      e.dateTime.isAfter(startDate) && e.dateTime.isBefore(endDate)
-    ).toList();
 
-    final stats = <String, int>{};
+    final weekEvents = _events
+        .where((e) =>
+            e.dateTime.isAfter(startDate) && e.dateTime.isBefore(endDate))
+        .toList();
+
+    final stats = <EventCategory, int>{};
     for (final event in weekEvents) {
-      final category = (event.category ?? EventCategory.other).displayName;
+      final category = event.category ?? EventCategory.other;
       stats[category] = (stats[category] ?? 0) + 1;
     }
     return stats;

@@ -5,7 +5,7 @@ import 'package:day_brief/models/voice_template.dart';
 void main() {
   group('VoiceTemplate', () {
     test('constructor stores all fields, isCustom defaults to false', () {
-      final t = VoiceTemplate(
+      const t = VoiceTemplate(
         id: 'a1',
         name: 'Gym',
         phrase: 'workout',
@@ -21,7 +21,7 @@ void main() {
     });
 
     test('toMap / fromMap round-trip', () {
-      final t = VoiceTemplate(
+      const t = VoiceTemplate(
         id: 'a1',
         name: 'Gym',
         phrase: 'workout',
@@ -47,7 +47,7 @@ void main() {
     });
 
     group('copyWith', () {
-      final original = VoiceTemplate(
+      const original = VoiceTemplate(
         id: '1',
         name: 'Standup',
         phrase: 'standup',

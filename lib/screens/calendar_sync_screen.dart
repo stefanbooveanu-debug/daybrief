@@ -1,14 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/event.dart';
 import '../services/google_calendar_service.dart';
 
 class CalendarSyncScreen extends StatefulWidget {
   final List<Event> events;
   final Function(List<Event>) onEventsImported;
-  
+
   const CalendarSyncScreen({
     super.key,
     required this.events,
@@ -27,14 +26,16 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF5F6368)),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? Colors.white : const Color(0xFF5F6368)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -77,7 +78,10 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.link, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
+                    Icon(Icons.link,
+                        color: isDark
+                            ? const Color(0xFF8AB4F8)
+                            : const Color(0xFF1A73E8)),
                     const SizedBox(width: 12),
                     Text(
                       'Google Calendar',
@@ -102,7 +106,9 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _isLoading ? null : _connectGoogleCalendar,
                     icon: const Icon(Icons.g_mobiledata, size: 24),
-                    label: Text(_isLoading ? 'Connecting...' : 'Connect Google Calendar'),
+                    label: Text(_isLoading
+                        ? 'Connecting...'
+                        : 'Connect Google Calendar'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -113,7 +119,9 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
                   Text(
                     _statusMessage!,
                     style: TextStyle(
-                      color: _statusMessage!.contains('Error') ? Colors.red : Colors.green,
+                      color: _statusMessage!.contains('Error')
+                          ? Colors.red
+                          : Colors.green,
                     ),
                   ),
                 ],
@@ -129,7 +137,8 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                Icon(Icons.info_outline,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -169,7 +178,7 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 28),
@@ -198,7 +207,8 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+              Icon(Icons.chevron_right,
+                  color: isDark ? Colors.grey[600] : Colors.grey[400]),
             ],
           ),
         ),
@@ -208,21 +218,21 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
 
   Future<void> _exportToIcs() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final icsContent = _calendarService.generateIcsFile(widget.events);
-      
+
       final result = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Calendar',
         fileName: 'daybrief_calendar.ics',
         type: FileType.custom,
         allowedExtensions: ['ics'],
       );
-      
+
       if (result != null) {
         final file = File(result);
         await file.writeAsString(icsContent);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -242,28 +252,29 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
         );
       }
     }
-    
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
   Future<void> _importFromIcs() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['ics'],
       );
-      
+
       if (result != null && result.files.single.path != null) {
         final file = File(result.files.single.path!);
         final content = await file.readAsString();
-        
+
         final importedEvents = _calendarService.parseIcsEvents(content);
-        
+
         if (importedEvents.isNotEmpty) {
           widget.onEventsImported(importedEvents);
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -293,7 +304,8 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
         );
       }
     }
-    
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
@@ -302,27 +314,32 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
       _isLoading = true;
       _statusMessage = null;
     });
-    
+
     try {
       await _calendarService.signIn();
-      
+
+      if (!mounted) return;
+
       if (_calendarService.isConnected) {
         setState(() => _statusMessage = 'Connected! Syncing events...');
-        
+
         int syncedCount = 0;
         for (final event in widget.events) {
           final success = await _calendarService.syncEvent(event);
           if (success) syncedCount++;
         }
-        
+
+        if (!mounted) return;
         setState(() => _statusMessage = 'Synced $syncedCount events!');
       } else {
         setState(() => _statusMessage = 'Connection cancelled');
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _statusMessage = 'Error: $e');
     }
-    
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 }

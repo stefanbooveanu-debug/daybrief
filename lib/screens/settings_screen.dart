@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'time_report_screen.dart';
-import 'share_calendar_screen.dart';
-import 'quick_poll_screen.dart';
-import 'family_calendar_screen.dart';
-import 'driving_mode_screen.dart';
+import '../models/event.dart';
 import '../theme/app_theme.dart';
+import 'driving_mode_screen.dart';
+import 'family_calendar_screen.dart';
+import 'quick_poll_screen.dart';
+import 'share_calendar_screen.dart';
+import 'time_report_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(bool)? onThemeChanged;
-  final Function(Map<String, Color>)? onColorsChanged;
-  final Map<String, Color>? categoryColors;
-  
+  final Function(Map<EventCategory, Color>)? onColorsChanged;
+  final Map<EventCategory, Color>? categoryColors;
+
   const SettingsScreen({
     super.key,
     this.onThemeChanged,
@@ -32,17 +33,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _conflictDetection = true;
   bool _isDarkMode = false;
   TimeOfDay _morningBriefing = const TimeOfDay(hour: 7, minute: 0);
-  
-  late Map<String, Color> _categoryColors;
+
+  late Map<EventCategory, Color> _categoryColors;
 
   bool _categoryColorsHydrated = false;
 
   @override
   void initState() {
     super.initState();
-    _categoryColors = Map<String, Color>.from(
-      widget.categoryColors ?? const <String, Color>{},
+    _categoryColors = Map<EventCategory, Color>.from(
+      AppColors.defaultCategoryColors,
     );
+    if (widget.categoryColors != null) {
+      _categoryColors.addAll(widget.categoryColors!);
+    }
   }
 
   @override
@@ -51,24 +55,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _isDarkMode = Theme.of(context).brightness == Brightness.dark;
     if (!_categoryColorsHydrated && _categoryColors.isEmpty) {
       final fromTheme = Theme.of(context).extension<CategoryColors>();
-      _categoryColors = Map<String, Color>.from(
+      _categoryColors = Map<EventCategory, Color>.from(
         fromTheme?.values ?? AppColors.defaultCategoryColors,
       );
       _categoryColorsHydrated = true;
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = _isDarkMode;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF5F6368)),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? Colors.white : const Color(0xFF5F6368)),
           onPressed: () {
             // Return the current values to parent
             Navigator.pop(context, {
@@ -91,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             'Appearance',
             [
-_buildSwitchTile(
+              _buildSwitchTile(
                 'Dark Mode',
                 'Save battery & easy on eyes',
                 Icons.dark_mode_outlined,
@@ -145,7 +151,11 @@ _buildSwitchTile(
                 (value) => setState(() => _conflictDetection = value),
                 isDark: isDark,
               ),
-              _buildTimeTile('Morning Briefing', '${_morningBriefing.hour}:${_morningBriefing.minute.toString().padLeft(2, '0')}', Icons.alarm_outlined, isDark),
+              _buildTimeTile(
+                  'Morning Briefing',
+                  '${_morningBriefing.hour}:${_morningBriefing.minute.toString().padLeft(2, '0')}',
+                  Icons.alarm_outlined,
+                  isDark),
             ],
             isDark: isDark,
           ),
@@ -153,9 +163,13 @@ _buildSwitchTile(
           _buildSection(
             'Analytics',
             [
-              _buildNavTile('Time Report', 'Weekly time analysis', Icons.pie_chart_outline, () {
+              _buildNavTile('Time Report', 'Weekly time analysis',
+                  Icons.pie_chart_outline, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const TimeReportScreen(events: [])));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const TimeReportScreen()));
               }, isDark),
               _buildSwitchTile(
                 'Smart Shortcuts',
@@ -172,21 +186,39 @@ _buildSwitchTile(
           _buildSection(
             'Collaboration',
             [
-              _buildNavTile('Share Calendar', 'Let others view your schedule', Icons.share_outlined, () {
+              _buildNavTile('Share Calendar', 'Let others view your schedule',
+                  Icons.share_outlined, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ShareCalendarScreen(events: const [])));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const ShareCalendarScreen(events: [])));
               }, isDark),
-              _buildNavTile('Quick Poll', 'Find the best meeting time', Icons.how_to_vote_outlined, () {
+              _buildNavTile('Quick Poll', 'Find the best meeting time',
+                  Icons.how_to_vote_outlined, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const QuickPollScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const QuickPollScreen()));
               }, isDark),
-              _buildNavTile('Family Calendar', 'Shared family events', Icons.family_restroom_outlined, () {
+              _buildNavTile('Family Calendar', 'Shared family events',
+                  Icons.family_restroom_outlined, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => FamilyCalendarScreen(onAddEvent: (e) {})));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            FamilyCalendarScreen(onAddEvent: (e) {})));
               }, isDark),
-              _buildNavTile('Driving Mode', 'Voice-only safe mode', Icons.directions_car_outlined, () {
+              _buildNavTile('Driving Mode', 'Voice-only safe mode',
+                  Icons.directions_car_outlined, () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const DrivingModeScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const DrivingModeScreen()));
               }, isDark),
             ],
             isDark: isDark,
@@ -226,11 +258,14 @@ _buildSwitchTile(
           _buildSection(
             'Category Colors',
             [
-              _buildColorTile('Work', _categoryColors['Work']!, Icons.work_outline, isDark),
-              _buildColorTile('Personal', _categoryColors['Personal']!, Icons.person_outline, isDark),
-              _buildColorTile('Health', _categoryColors['Health']!, Icons.favorite_outline, isDark),
-              _buildColorTile('Social', _categoryColors['Social']!, Icons.people_outline, isDark),
-              _buildColorTile('Shopping', _categoryColors['Shopping']!, Icons.shopping_cart_outlined, isDark),
+              for (final category in EventCategory.values)
+                if (category != EventCategory.other)
+                  _buildColorTile(
+                    category,
+                    _categoryColors[category]!,
+                    AppColors.getCategoryIcon(category),
+                    isDark,
+                  ),
             ],
             isDark: isDark,
           ),
@@ -251,13 +286,17 @@ _buildSwitchTile(
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF8AB4F8).withOpacity(0.2) : const Color(0xFFE8F0FE),
+                    color: isDark
+                        ? const Color(0xFF8AB4F8).withValues(alpha: 0.2)
+                        : const Color(0xFFE8F0FE),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
                     Icons.calendar_today_rounded,
                     size: 40,
-                    color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+                    color: isDark
+                        ? const Color(0xFF8AB4F8)
+                        : const Color(0xFF1A73E8),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -284,7 +323,8 @@ _buildSwitchTile(
     );
   }
 
-  Widget _buildSection(String title, List<Widget> children, {required bool isDark}) {
+  Widget _buildSection(String title, List<Widget> children,
+      {required bool isDark}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -301,13 +341,15 @@ _buildSwitchTile(
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: isDark ? null : [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Column(
             children: children,
@@ -317,20 +359,31 @@ _buildSwitchTile(
     );
   }
 
-  Widget _buildNavTile(String title, String subtitle, IconData icon, VoidCallback onTap, bool isDark) {
+  Widget _buildNavTile(String title, String subtitle, IconData icon,
+      VoidCallback onTap, bool isDark) {
     return ListTile(
       onTap: onTap,
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))
+              .withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), size: 22),
+        child: Icon(icon,
+            color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+            size: 22),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
-      trailing: Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+      title: Text(title,
+          style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : const Color(0xFF202124))),
+      subtitle: Text(subtitle,
+          style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.grey[400] : Colors.grey[600])),
+      trailing: Icon(Icons.chevron_right,
+          color: isDark ? Colors.grey[600] : Colors.grey[400]),
     );
   }
 
@@ -346,10 +399,13 @@ _buildSwitchTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))
+              .withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), size: 22),
+        child: Icon(icon,
+            color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+            size: 22),
       ),
       title: Text(
         title,
@@ -391,7 +447,8 @@ _buildSwitchTile(
     );
   }
 
-  Widget _buildTimeTile(String title, String value, IconData icon, bool isDark) {
+  Widget _buildTimeTile(
+      String title, String value, IconData icon, bool isDark) {
     return ListTile(
       onTap: () async {
         final time = await showTimePicker(
@@ -405,10 +462,13 @@ _buildSwitchTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+          color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8))
+              .withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), size: 22),
+        child: Icon(icon,
+            color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+            size: 22),
       ),
       title: Text(
         title,
@@ -427,20 +487,25 @@ _buildSwitchTile(
     );
   }
 
-  Widget _buildColorTile(String name, Color color, IconData icon, bool isDark) {
+  Widget _buildColorTile(
+    EventCategory category,
+    Color color,
+    IconData icon,
+    bool isDark,
+  ) {
     return ListTile(
-      onTap: () => _showColorPicker(name, color),
+      onTap: () => _showColorPicker(category, color),
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: color, size: 22),
       ),
       title: Text(
-        name,
+        category.displayName,
         style: TextStyle(
           fontWeight: FontWeight.w600,
           color: isDark ? Colors.white : const Color(0xFF202124),
@@ -458,7 +523,7 @@ _buildSwitchTile(
     );
   }
 
-  void _showColorPicker(String category, Color currentColor) {
+  void _showColorPicker(EventCategory category, Color currentColor) {
     final colors = [
       const Color(0xFF1A73E8),
       const Color(0xFF34A853),
@@ -471,48 +536,60 @@ _buildSwitchTile(
       const Color(0xFF607D8B),
       const Color(0xFF795548),
     ];
-    
+
     Color selectedColor = currentColor;
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return AlertDialog(
-            title: Text('Choose color for $category'),
+            title: Text('Choose color for ${category.displayName}'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: colors.map((c) => GestureDetector(
-                    onTap: () {
-                      setDialogState(() => selectedColor = c);
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: c,
-                        shape: BoxShape.circle,
-                        border: c == selectedColor 
-                            ? Border.all(color: Colors.white, width: 3) 
-                            : Border.all(color: Colors.grey.withOpacity(0.3), width: 1),
-                        boxShadow: c == selectedColor 
-                            ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 8)] 
-                            : null,
-                      ),
-                      child: c == selectedColor ? const Icon(Icons.check, color: Colors.white, size: 24) : null,
-                    ),
-                  )).toList(),
+                  children: colors
+                      .map((c) => GestureDetector(
+                            onTap: () {
+                              setDialogState(() => selectedColor = c);
+                            },
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: c == selectedColor
+                                    ? Border.all(color: Colors.white, width: 3)
+                                    : Border.all(
+                                        color: Colors.grey.withValues(alpha: 0.3)),
+                                boxShadow: c == selectedColor
+                                    ? [
+                                        BoxShadow(
+                                            color: c.withValues(alpha: 0.5),
+                                            blurRadius: 8)
+                                      ]
+                                    : null,
+                              ),
+                              child: c == selectedColor
+                                  ? const Icon(Icons.check,
+                                      color: Colors.white, size: 24)
+                                  : null,
+                            ),
+                          ))
+                      .toList(),
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF1F3F4),
+                    color: isDark
+                        ? const Color(0xFF2D2D2D)
+                        : const Color(0xFFF1F3F4),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -531,7 +608,8 @@ _buildSwitchTile(
                       Text(
                         'Selected',
                         style: TextStyle(
-                          color: isDark ? Colors.white : const Color(0xFF202124),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF202124),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -543,7 +621,9 @@ _buildSwitchTile(
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text('Cancel', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                child: Text('Cancel',
+                    style: TextStyle(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600])),
               ),
               FilledButton(
                 onPressed: () {
@@ -552,9 +632,12 @@ _buildSwitchTile(
                   Navigator.pop(dialogContext);
                 },
                 style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+                  backgroundColor: isDark
+                      ? const Color(0xFF8AB4F8)
+                      : const Color(0xFF1A73E8),
                 ),
-                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('Save',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           );

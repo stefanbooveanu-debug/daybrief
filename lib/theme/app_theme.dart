@@ -5,13 +5,13 @@ import '../models/event.dart';
 class AppColors {
   AppColors._();
 
-  static const Map<String, Color> defaultCategoryColors = {
-    'Work': Color(0xFF1A73E8),
-    'Personal': Color(0xFF34A853),
-    'Health': Color(0xFFEA4335),
-    'Social': Color(0xFF9334E6),
-    'Shopping': Color(0xFFFBBC04),
-    'Other': Color(0xFF5F6368),
+  static const Map<EventCategory, Color> defaultCategoryColors = {
+    EventCategory.work: Color(0xFF1A73E8),
+    EventCategory.personal: Color(0xFF34A853),
+    EventCategory.health: Color(0xFFEA4335),
+    EventCategory.social: Color(0xFF9334E6),
+    EventCategory.shopping: Color(0xFFFBBC04),
+    EventCategory.other: Color(0xFF5F6368),
   };
 
   static const Color primary = Color(0xFF1A73E8);
@@ -24,7 +24,7 @@ class AppColors {
   static const Color onSurface = Color(0xFF202124);
   static const Color textSecondary = Color(0xFF5F6368);
   static const Color divider = Color(0xFFE8EAED);
-  
+
   static const Color gradientStart = Color(0xFF667eea);
   static const Color gradientEnd = Color(0xFF764ba2);
 
@@ -34,32 +34,33 @@ class AppColors {
   static const Color brown = Color(0xFF8A6A55);
   static const Color darkBrown = Color(0xFF4F3A31);
 
-  static Color getCategoryColor(String category) {
-    return defaultCategoryColors[category] ?? defaultCategoryColors['Other']!;
+  static Color getCategoryColor(EventCategory category) {
+    return defaultCategoryColors[category] ??
+        defaultCategoryColors[EventCategory.other]!;
   }
 
   static Color colorForCategory(EventCategory? category) =>
-      getCategoryColor((category ?? EventCategory.other).displayName);
+      getCategoryColor(category ?? EventCategory.other);
 
-  static IconData getCategoryIcon(String category) {
+  static IconData getCategoryIcon(EventCategory category) {
     switch (category) {
-      case 'Work':
+      case EventCategory.work:
         return Icons.work_outline;
-      case 'Personal':
+      case EventCategory.personal:
         return Icons.person_outline;
-      case 'Health':
+      case EventCategory.health:
         return Icons.favorite_outline;
-      case 'Social':
+      case EventCategory.social:
         return Icons.people_outline;
-      case 'Shopping':
+      case EventCategory.shopping:
         return Icons.shopping_cart_outlined;
-      default:
+      case EventCategory.other:
         return Icons.event;
     }
   }
 
   static IconData iconForCategory(EventCategory? category) =>
-      getCategoryIcon((category ?? EventCategory.other).displayName);
+      getCategoryIcon(category ?? EventCategory.other);
 }
 
 class AppTheme {
@@ -71,17 +72,16 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.brown,
-        brightness: Brightness.light,
       ).copyWith(
         primary: AppColors.brown,
         primaryContainer: AppColors.sand,
         secondary: AppColors.tan,
         secondaryContainer: AppColors.cream,
-        tertiary: Color(0xFFA68B6C),
-        tertiaryContainer: Color(0xFFEEE6DA),
+        tertiary: const Color(0xFFA68B6C),
+        tertiaryContainer: const Color(0xFFEEE6DA),
         surface: AppColors.cream,
         onSurface: AppColors.darkBrown,
-        outline: Color(0xFFD4C8B8),
+        outline: const Color(0xFFD4C8B8),
       ),
       scaffoldBackgroundColor: AppColors.cream,
       appBarTheme: const AppBarTheme(
@@ -113,7 +113,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.brown, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -190,7 +191,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -241,18 +243,17 @@ class AppTheme {
 class CategoryColors extends ThemeExtension<CategoryColors> {
   const CategoryColors(this.values);
 
-  final Map<String, Color> values;
+  final Map<EventCategory, Color> values;
 
-  Color colorFor(String? name) =>
-      (name != null ? values[name] : null) ??
-      AppColors.defaultCategoryColors[name] ??
-      AppColors.defaultCategoryColors['Other']!;
-
-  Color colorForCategory(EventCategory? category) =>
-      colorFor((category ?? EventCategory.other).displayName);
+  Color colorForCategory(EventCategory? category) {
+    final key = category ?? EventCategory.other;
+    return values[key] ??
+        AppColors.defaultCategoryColors[key] ??
+        AppColors.defaultCategoryColors[EventCategory.other]!;
+  }
 
   @override
-  CategoryColors copyWith({Map<String, Color>? values}) =>
+  CategoryColors copyWith({Map<EventCategory, Color>? values}) =>
       CategoryColors(values ?? this.values);
 
   @override

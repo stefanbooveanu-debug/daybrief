@@ -1,6 +1,7 @@
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
+import '../utils/logger.dart';
 
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
@@ -12,23 +13,23 @@ class SpeechService {
 
   Future<bool> initialize() async {
     if (_isInitialized) return true;
-    
+
     try {
       _isInitialized = await _speechToText.initialize(
-        onError: (error) => print('Speech error: $error'),
-        onStatus: (status) => print('Speech status: $status'),
+        onError: (error) => DayBriefLog.warning('Speech error', error: error),
+        onStatus: (status) => DayBriefLog.debug('Speech status: $status'),
       );
-      
+
       if (!kIsWeb) {
         await _flutterTts.setLanguage('en-US');
         await _flutterTts.setSpeechRate(0.5);
         await _flutterTts.setVolume(1.0);
         await _flutterTts.setPitch(1.0);
       }
-      
+
       return _isInitialized;
     } catch (e) {
-      print('Speech init error: $e');
+      DayBriefLog.error('Speech init error', error: e);
       return false;
     }
   }
@@ -41,7 +42,7 @@ class SpeechService {
     if (!_isInitialized) {
       final success = await initialize();
       if (!success) {
-        print('Speech not available on this device');
+        DayBriefLog.warning('Speech not available on this device');
         return;
       }
     }
@@ -60,12 +61,13 @@ class SpeechService {
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
-        partialResults: false,
-        cancelOnError: true,
-        listenMode: ListenMode.confirmation,
+        listenOptions: SpeechListenOptions(
+          partialResults: false,
+          cancelOnError: true,
+        ),
       );
     } catch (e) {
-      print('Listen error: $e');
+      DayBriefLog.error('Listen error', error: e);
       _isListening = false;
       onListeningStopped?.call();
     }
@@ -91,7 +93,7 @@ class SpeechService {
       await _flutterTts.setSpeechRate(0.5);
       await _flutterTts.speak(text);
     } catch (e) {
-      print('Web TTS error: $e');
+      DayBriefLog.error('Web TTS error', error: e);
     }
   }
 

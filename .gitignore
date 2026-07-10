@@ -46,3 +46,6 @@ app.*.map.json
 lib/config/app_config.dart
 .env
 
+# Local agent overrides (Claude Code)
+CLAUDE.local.md
+

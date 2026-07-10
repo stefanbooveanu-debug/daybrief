@@ -76,7 +76,7 @@ void main() {
     });
 
     test('includes midnight (00:00) and 23:59 of the same day', () async {
-      await db.insertEvent(ev(id: 'midnight', dt: DateTime(2026, 5, 25, 0, 0)));
+      await db.insertEvent(ev(id: 'midnight', dt: DateTime(2026, 5, 25)));
       await db.insertEvent(ev(id: 'eod',      dt: DateTime(2026, 5, 25, 23, 59)));
       final result = await db.getEventsForDay(DateTime(2026, 5, 25));
       expect(result.map((e) => e.id).toSet(), {'midnight', 'eod'});

@@ -1,0 +1,27 @@
+---
+description: Dart/Flutter conventions for DayBrief — analyzer-first, Provider stack
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Dart / Flutter (DayBrief)
+
+Read `AGENTS.md` for commands, architecture, and locked paths.
+
+## Lint enforcement
+
+- Style rules live in `analysis_options.yaml`, not in this file.
+- Run `flutter analyze` before finishing Dart work; fix all reported issues.
+- When on Dart 3.10+, enable `many_lints` in `analysis_options.yaml` instead of expanding this rule file.
+
+## This codebase
+
+- State management: **Provider** + `ChangeNotifier` in `lib/providers/`
+- Models: **Freezed** — regenerate with `dart run build_runner build --delete-conflicting-outputs`
+- Do not add BLoC/Riverpod without explicit request
+- Check `mounted` after async gaps in `State` widgets
+- Match surrounding code style in each file
+
+## Generated files
+
+Do not hand-edit `*.g.dart` or `*.freezed.dart`.

@@ -51,7 +51,8 @@ class VoiceCommandService {
       final now = DateTime.now();
       final dayName = DateFormat('EEEE').format(now);
       final monthName = DateFormat('MMMM').format(now);
-      return VoiceSpoken('Today is $dayName, $monthName ${now.day}, ${now.year}');
+      return VoiceSpoken(
+          'Today is $dayName, $monthName ${now.day}, ${now.year}');
     }
 
     if (commandText.contains('what time is it') ||
@@ -131,23 +132,23 @@ class VoiceCommandService {
         .toList();
 
     if (todayEvents.isEmpty) {
-      return "Hey! You have nothing planned for today. Enjoy your free time!";
+      return 'Hey! You have nothing planned for today. Enjoy your free time!';
     }
     if (todayEvents.length == 1) {
       final e = todayEvents.first;
       final time = DateFormat('h:mm a').format(e.dateTime);
       final desc =
           (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
-      return "Hey! Today you need to go to ${e.title}$desc at $time";
+      return 'Hey! Today you need to go to ${e.title}$desc at $time';
     }
     final parts = <String>[];
     for (final e in todayEvents) {
       final time = DateFormat('h:mm a').format(e.dateTime);
       final desc =
           (e.description ?? '').isNotEmpty ? ' for ${e.description}' : '';
-      parts.add("${e.title}$desc at $time");
+      parts.add('${e.title}$desc at $time');
     }
-    return "Hey! Today you have ${todayEvents.length} things to do. ${parts.join('. ')}";
+    return 'Hey! Today you have ${todayEvents.length} things to do. ${parts.join('. ')}';
   }
 
   static String formatEventsForSpeech(List<Event> events) {
@@ -194,7 +195,7 @@ class VoiceCommandService {
           "I couldn't find that event. Can you be more specific?");
     }
     if (toTime == null) {
-      return const VoiceSpoken("Which time do you want to move it to?");
+      return const VoiceSpoken('Which time do you want to move it to?');
     }
 
     final newDateTime = DateTime(
@@ -213,7 +214,7 @@ class VoiceCommandService {
         return VoiceDeleteEvent(e.title);
       }
     }
-    return const VoiceSpoken("Which event do you want to delete?");
+    return const VoiceSpoken('Which event do you want to delete?');
   }
 
   String _buildInsights(List<Event> events) {
@@ -225,35 +226,35 @@ class VoiceCommandService {
         .toList();
 
     if (weekEvents.isEmpty) {
-      return "You have no events this week. Enjoy your free time!";
+      return 'You have no events this week. Enjoy your free time!';
     }
 
-    final categoryCount = <String, int>{};
+    final categoryCount = <EventCategory, int>{};
     for (final e in weekEvents) {
-      final cat = (e.category ?? EventCategory.other).displayName;
+      final cat = e.category ?? EventCategory.other;
       categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
     }
 
     final sorted = categoryCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final topCat = sorted.isNotEmpty ? sorted.first.key : 'Other';
+    final topCat = sorted.isNotEmpty ? sorted.first.key.displayName : 'Other';
 
     final workEvents = weekEvents
         .where((e) =>
             e.category == EventCategory.work ||
             e.category == EventCategory.personal)
         .length;
-    final healthEvents = weekEvents
-        .where((e) => e.category == EventCategory.health)
-        .length;
+    final healthEvents =
+        weekEvents.where((e) => e.category == EventCategory.health).length;
 
     final pieces = <String>[];
     if (workEvents > 10) {
-      pieces.add("That's a busy week! Make sure to take breaks between meetings.");
+      pieces.add(
+          "That's a busy week! Make sure to take breaks between meetings.");
     }
     if (healthEvents == 0 && workEvents > 3) {
       pieces.add(
-          "Consider adding some exercise time - you have no health activities scheduled.");
+          'Consider adding some exercise time - you have no health activities scheduled.');
     }
     if (pieces.isEmpty) {
       pieces.add("You've got a good balance. Keep it up!");
@@ -263,8 +264,7 @@ class VoiceCommandService {
   }
 
   TimeOfDay? _parseTime(String text, List<String> markers) {
-    final hourPattern =
-        RegExp(r'(\d{1,2})\s*(am|pm)', caseSensitive: false);
+    final hourPattern = RegExp(r'(\d{1,2})\s*(am|pm)', caseSensitive: false);
 
     for (final marker in markers) {
       final idx = text.indexOf(marker);
@@ -380,7 +380,6 @@ class VoiceCommandService {
       dateTime: DateTime(eventDate.year, eventDate.month, eventDate.day,
           time.hour, time.minute),
       category: _inferCategory(title),
-      reminderEnabled: true,
       userId: userId,
     );
   }

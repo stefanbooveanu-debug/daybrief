@@ -11,22 +11,24 @@ import 'providers/voice_template_provider.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
+import 'models/event.dart';
+import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+    DayBriefLog.info('Firebase initialized successfully');
   } catch (e) {
-    print('Firebase initialization error: $e');
+    DayBriefLog.warning('Firebase initialization error', error: e);
   }
-  
+
   try {
-    await initializeDateFormatting('en_US', null);
+    await initializeDateFormatting('en_US');
   } catch (e) {
     // fallback
   }
@@ -43,8 +45,8 @@ class DayBriefApp extends StatefulWidget {
 class _DayBriefAppState extends State<DayBriefApp> {
   bool _isDarkMode = false;
   bool _isLoading = true;
-  Map<String, Color> _categoryColors =
-      Map<String, Color>.from(AppColors.defaultCategoryColors);
+  Map<EventCategory, Color> _categoryColors =
+      Map<EventCategory, Color>.from(AppColors.defaultCategoryColors);
 
   @override
   void initState() {
@@ -54,10 +56,10 @@ class _DayBriefAppState extends State<DayBriefApp> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     setState(() {
       _isDarkMode = prefs.getBool('darkMode') ?? false;
-      
+
       final savedColors = prefs.getString('categoryColors');
       if (savedColors != null) {
         _categoryColors = _parseColors(savedColors);
@@ -66,21 +68,28 @@ class _DayBriefAppState extends State<DayBriefApp> {
     });
   }
 
-  Map<String, Color> _parseColors(String data) {
-    final Map<String, Color> colors = {};
+  Map<EventCategory, Color> _parseColors(String data) {
+    final colors = <EventCategory, Color>{};
     final parts = data.split(';');
     for (final part in parts) {
       if (part.isEmpty) continue;
       final kv = part.split(':');
       if (kv.length == 2) {
-        colors[kv[0]] = Color(int.parse(kv[1]));
+        final category = EventCategory.parse(kv[0]);
+        if (category != null) {
+          colors[category] = Color(int.parse(kv[1]));
+        }
       }
     }
-    return colors.isEmpty ? _categoryColors : colors;
+    return colors.isEmpty
+        ? Map<EventCategory, Color>.from(AppColors.defaultCategoryColors)
+        : colors;
   }
 
-  String _encodeColors(Map<String, Color> colors) {
-    return colors.entries.map((e) => '${e.key}:${e.value.value.toRadixString(16)}').join(';');
+  String _encodeColors(Map<EventCategory, Color> colors) {
+    return colors.entries
+        .map((e) => '${e.key.name}:${e.value.toARGB32().toRadixString(16)}')
+        .join(';');
   }
 
   Future<void> _saveDarkMode(bool value) async {
@@ -88,7 +97,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
     await prefs.setBool('darkMode', value);
   }
 
-  Future<void> _saveColors(Map<String, Color> colors) async {
+  Future<void> _saveColors(Map<EventCategory, Color> colors) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('categoryColors', _encodeColors(colors));
   }
@@ -111,7 +120,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
                 backgroundColor: const Color(0xFF121212),
                 body: Center(
                   child: CircularProgressIndicator(
-                    color: _categoryColors['Work'],
+                    color: _categoryColors[EventCategory.work],
                   ),
                 ),
               ),
@@ -155,5 +164,4 @@ class _DayBriefAppState extends State<DayBriefApp> {
       ),
     );
   }
-
 }

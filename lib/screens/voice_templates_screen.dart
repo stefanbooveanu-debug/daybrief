@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/event.dart';
 import '../models/voice_template.dart';
 import '../providers/voice_template_provider.dart';
 import '../theme/app_theme.dart';
@@ -17,12 +18,14 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFFAFAFA),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFFAFAFA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         title: Text(
           'Voice Templates',
-          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
+          style:
+              TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
         ),
         iconTheme: IconThemeData(
           color: isDark ? Colors.white : const Color(0xFF202124),
@@ -54,14 +57,15 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
               _buildSectionTitle('Default Templates', isDark),
               const SizedBox(height: 8),
               ...provider.templates.where((t) => !t.isCustom).map(
-                (template) => _buildTemplateCard(template, isDark),
-              ),
+                    (template) => _buildTemplateCard(template, isDark),
+                  ),
               if (provider.customTemplates.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 _buildSectionTitle('Custom Templates', isDark),
                 const SizedBox(height: 8),
                 ...provider.customTemplates.map(
-                  (template) => _buildTemplateCard(template, isDark, canDelete: true),
+                  (template) =>
+                      _buildTemplateCard(template, isDark, canDelete: true),
                 ),
               ],
             ],
@@ -72,7 +76,8 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
         onPressed: () => _showAddTemplateDialog(context),
         backgroundColor: const Color(0xFF1A73E8),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Template', style: TextStyle(color: Colors.white)),
+        label:
+            const Text('Add Template', style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -81,12 +86,17 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F0FE),
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : const Color(0xFFE8F0FE),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: const Color(0xFF1A73E8)),
+          Icon(
+            Icons.info_outline,
+            color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -113,14 +123,16 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
     );
   }
 
-  Widget _buildTemplateCard(VoiceTemplate template, bool isDark, {bool canDelete = false}) {
+  Widget _buildTemplateCard(VoiceTemplate template, bool isDark,
+      {bool canDelete = false}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       elevation: 1,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _getCategoryColor(template.category).withOpacity(0.2),
+          backgroundColor:
+              _getCategoryColor(template.category).withValues(alpha: 0.2),
           child: Icon(
             _getCategoryIcon(template.category),
             color: _getCategoryColor(template.category),
@@ -209,19 +221,35 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
                             child: Text(c.displayName),
                           ))
                       .toList(),
-                  onChanged: (v) =>
-                      setDialogState(() => selectedCategory = v!),
+                  onChanged: (v) => setDialogState(() => selectedCategory = v!),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String?>(
                   value: defaultTime,
                   decoration: const InputDecoration(labelText: 'Default Time'),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('No default')),
-                    ...['06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-                    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
-                    '18:00', '19:00', '20:00', '21:00'].map(
-                      (t) => DropdownMenuItem<String?>(value: t, child: Text(t)),
+                    const DropdownMenuItem<String?>(
+                        child: Text('No default')),
+                    ...[
+                      '06:00',
+                      '07:00',
+                      '08:00',
+                      '09:00',
+                      '10:00',
+                      '11:00',
+                      '12:00',
+                      '13:00',
+                      '14:00',
+                      '15:00',
+                      '16:00',
+                      '17:00',
+                      '18:00',
+                      '19:00',
+                      '20:00',
+                      '21:00'
+                    ].map(
+                      (t) =>
+                          DropdownMenuItem<String?>(value: t, child: Text(t)),
                     ),
                   ],
                   onChanged: (v) => setDialogState(() => defaultTime = v),
@@ -236,7 +264,8 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
             ),
             FilledButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty && phraseController.text.isNotEmpty) {
+                if (nameController.text.isNotEmpty &&
+                    phraseController.text.isNotEmpty) {
                   final template = VoiceTemplate(
                     id: DateTime.now().millisecondsSinceEpoch.toString(),
                     name: nameController.text,

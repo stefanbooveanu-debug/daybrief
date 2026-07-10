@@ -36,9 +36,8 @@ void main() {
   });
 
   testWidgets('renders formatted time h:mm a', (tester) async {
-    final at930 = DateTime.now()
-        .add(const Duration(days: 1))
-        .copyWith(hour: 9, minute: 30, second: 0, millisecond: 0, microsecond: 0);
+    final at930 = DateTime.now().add(const Duration(days: 1)).copyWith(
+        hour: 9, minute: 30, second: 0, millisecond: 0, microsecond: 0);
     await tester.pumpWidget(_wrap(EventCard(
       event: ev(dt: at930),
       onDelete: () {},
@@ -62,9 +61,9 @@ void main() {
         (tester) async {
       const overrideColor = Color(0xFFAA0000);
       await tester.pumpWidget(_wrap(EventCard(
-        event: ev(category: EventCategory.work),
+        event: ev(),
         onDelete: () {},
-        categoryColors: const {'Work': overrideColor},
+        categoryColors: const {EventCategory.work: overrideColor},
       )));
       // Build succeeds, widget tree contains the card.
       expect(find.byType(EventCard), findsOneWidget);
@@ -73,7 +72,7 @@ void main() {
     testWidgets('falls back to theme CategoryColors when no override',
         (tester) async {
       await tester.pumpWidget(_wrap(EventCard(
-        event: ev(category: EventCategory.work),
+        event: ev(),
         onDelete: () {},
       )));
       expect(find.byType(EventCard), findsOneWidget);
@@ -91,8 +90,7 @@ void main() {
       }
     });
 
-    testWidgets('uncategorized event still renders (no crash)',
-        (tester) async {
+    testWidgets('uncategorized event still renders (no crash)', (tester) async {
       await tester.pumpWidget(_wrap(EventCard(
         event: ev(category: null, title: 'Mystery'),
         onDelete: () {},

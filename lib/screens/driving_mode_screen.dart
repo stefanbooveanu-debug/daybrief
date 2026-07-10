@@ -210,10 +210,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2A1A0A).withOpacity(0.8),
+                color: const Color(0xFF2A1A0A).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: const Color(0xFFFF8C69).withOpacity(0.3),
+                  color: const Color(0xFFFF8C69).withValues(alpha: 0.3),
                 ),
               ),
               child: const Row(
@@ -286,7 +286,6 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: const Color(0xFFFF8C69),
-                        width: 1,
                       ),
                     ),
                   ),
@@ -316,7 +315,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                     height: 160 + _wave1.value * 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFF8C69).withOpacity(0.05),
+                      color: const Color(0xFFFF8C69).withValues(alpha: 0.05),
                       border: Border.all(
                         color: const Color(0xFFFF8C69),
                         width: 2,
@@ -350,7 +349,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                           color: (_isListening
                                   ? const Color(0xFFFF4444)
                                   : const Color(0xFFFF8C69))
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                           blurRadius: 30,
                           spreadRadius: 5,
                         ),
@@ -396,7 +395,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         color: const Color(0xFF1A0E00),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFFF8C69).withOpacity(0.2),
+          color: const Color(0xFFFF8C69).withValues(alpha: 0.2),
         ),
       ),
       child: Text(
@@ -420,7 +419,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         color: const Color(0xFF1A0E00),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFFF8C69).withOpacity(0.15),
+          color: const Color(0xFFFF8C69).withValues(alpha: 0.15),
         ),
       ),
       child: Row(
@@ -479,7 +478,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                       color: const Color(0xFF1A0E00),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFFFF8C69).withOpacity(0.2),
+                        color: const Color(0xFFFF8C69).withValues(alpha: 0.2),
                       ),
                     ),
                     child: Column(

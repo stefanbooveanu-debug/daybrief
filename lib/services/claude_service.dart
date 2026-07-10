@@ -10,7 +10,6 @@ import '../models/event.dart';
 class ClaudeService {
   static const String _apiBase = String.fromEnvironment(
     'CLAUDE_API_BASE',
-    defaultValue: '',
   );
 
   static Uri _uri(String path) {

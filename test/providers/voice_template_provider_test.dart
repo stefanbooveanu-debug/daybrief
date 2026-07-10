@@ -36,7 +36,7 @@ void main() {
 
     test('loads existing templates from SharedPreferences', () async {
       final stored = jsonEncode([
-        VoiceTemplate(
+        const VoiceTemplate(
           id: 'x',
           name: 'Stored',
           phrase: 'stored',
@@ -62,11 +62,10 @@ void main() {
     test('appends with isCustom=true regardless of input', () async {
       final p = await _ready();
       final base = p.templates.length;
-      await p.addTemplate(VoiceTemplate(
+      await p.addTemplate(const VoiceTemplate(
         id: 'mine',
         name: 'Mine',
         phrase: 'mine',
-        isCustom: false, // should be overridden to true
       ));
       expect(p.templates.length, base + 1);
       expect(p.templates.last.isCustom, isTrue);
@@ -76,7 +75,7 @@ void main() {
     test('persists across a new provider instance', () async {
       var p = await _ready();
       await p.addTemplate(
-        VoiceTemplate(id: 'mine', name: 'Mine', phrase: 'mine'),
+        const VoiceTemplate(id: 'mine', name: 'Mine', phrase: 'mine'),
       );
       final beforeCount = p.templates.length;
 
@@ -99,7 +98,7 @@ void main() {
       final p = await _ready();
       final before = p.templates.length;
       await p.updateTemplate(
-        VoiceTemplate(id: 'ghost', name: 'g', phrase: 'g'),
+        const VoiceTemplate(id: 'ghost', name: 'g', phrase: 'g'),
       );
       expect(p.templates.length, before);
     });
@@ -132,7 +131,7 @@ void main() {
     test('overwrites all custom templates with the defaults', () async {
       final p = await _ready();
       await p.addTemplate(
-        VoiceTemplate(id: 'mine', name: 'Mine', phrase: 'mine'),
+        const VoiceTemplate(id: 'mine', name: 'Mine', phrase: 'mine'),
       );
       expect(p.customTemplates, isNotEmpty);
 

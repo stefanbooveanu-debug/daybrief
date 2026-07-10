@@ -115,7 +115,6 @@ class _RecurrenceConverter implements JsonConverter<RecurrenceType, Object?> {
 sealed class Event with _$Event {
   const Event._();
 
-  @JsonSerializable(explicitToJson: true)
   const factory Event({
     required String id,
     required String title,

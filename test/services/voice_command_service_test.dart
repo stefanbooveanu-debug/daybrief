@@ -69,7 +69,7 @@ void main() {
     test('"what do I have today" mentions today\'s event titles', () async {
       final today = DateTime.now();
       final events = [
-        ev(title: 'Standup', dt: DateTime(today.year, today.month, today.day, 9)),
+        ev(dt: DateTime(today.year, today.month, today.day, 9)),
         ev(title: 'Gym',     dt: DateTime(today.year, today.month, today.day, 18)),
       ];
       final result = await svc.processCommand(
@@ -128,7 +128,7 @@ void main() {
       final e = ev(
         id: 'meet-3',
         title: 'Project sync',
-        dt: DateTime(today.year, today.month, today.day, 15, 0),
+        dt: DateTime(today.year, today.month, today.day, 15),
       );
       final result = svc.parseMoveEvent('move my 3pm to 5pm', [e]) as VoiceMoveEvent;
 
@@ -270,9 +270,7 @@ void main() {
     test('one event, no description', () {
       final today = DateTime.now();
       final e = ev(
-        title: 'Standup',
-        dt: DateTime(today.year, today.month, today.day, 9, 0),
-        description: null,
+        dt: DateTime(today.year, today.month, today.day, 9),
       );
       final out = svc.formatScheduleForSpeech([e]);
       expect(out, contains('Standup'));
@@ -339,7 +337,6 @@ void main() {
             id: 'w$i',
             title: 'Meeting $i',
             dt: DateTime(today.year, today.month, today.day, 9 + (i % 8)),
-            category: EventCategory.work,
           ),
         ),
         ev(
@@ -362,7 +359,6 @@ void main() {
           id: 'w$i',
           title: 'Work $i',
           dt: DateTime(today.year, today.month, today.day, 9 + i),
-          category: EventCategory.work,
         ),
       );
       final r = await svc.processCommand('daybrief insights', events)
@@ -380,7 +376,6 @@ void main() {
           id: 'w$i',
           title: 'Work $i',
           dt: DateTime(today.year, today.month, today.day, 9 + (i % 8)),
-          category: EventCategory.work,
         ),
       );
       final r = await svc.processCommand('daybrief insights', events)

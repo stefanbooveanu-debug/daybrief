@@ -50,7 +50,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final endOfWeek = startOfWeek.add(const Duration(days: 7));
-    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfMonth = DateTime(now.year, now.month);
     final endOfMonth = DateTime(now.year, now.month + 1, 0);
 
     setState(() {
@@ -192,14 +192,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                 decoration: BoxDecoration(
                                   color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
                                       width: 48, height: 48,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1A73E8).withOpacity(0.1),
+                                        color: const Color(0xFF1A73E8).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: const Icon(Icons.event, color: Color(0xFF1A73E8)),

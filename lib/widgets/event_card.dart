@@ -6,13 +6,13 @@ import '../utils/date_utils.dart' as app_date_utils;
 class EventCard extends StatelessWidget {
   static final _cachedTimeFormat = app_date_utils.DateUtils.timeFormat;
   static final _cachedDateFormat = app_date_utils.DateUtils.dateFullFormat;
-  
+
   final Event event;
   final VoidCallback onDelete;
   final VoidCallback? onDuplicate;
   final VoidCallback? onComplete;
   final bool isDark;
-  final Map<String, Color> categoryColors;
+  final Map<EventCategory, Color> categoryColors;
 
   const EventCard({
     super.key,
@@ -21,63 +21,81 @@ class EventCard extends StatelessWidget {
     this.onDuplicate,
     this.onComplete,
     this.isDark = false,
-    this.categoryColors = const <String, Color>{},
+    this.categoryColors = const <EventCategory, Color>{},
   });
 
-  Color _categoryColor(BuildContext context, String name) {
-    final fromArg = categoryColors[name];
+  Color _categoryColor(BuildContext context, EventCategory category) {
+    final fromArg = categoryColors[category];
     if (fromArg != null) return fromArg;
-    return Theme.of(context).extension<CategoryColors>()?.colorFor(name) ??
-        AppColors.defaultCategoryColors[name] ??
-        AppColors.defaultCategoryColors['Other']!;
+    return Theme.of(context)
+            .extension<CategoryColors>()
+            ?.colorForCategory(category) ??
+        AppColors.getCategoryColor(category);
   }
 
   Color _getEventColor(BuildContext context) {
-    switch (event.category) {
-      case EventCategory.work:
-        return _categoryColor(context, 'Work');
-      case EventCategory.personal:
-        return _categoryColor(context, 'Personal');
-      case EventCategory.health:
-        return _categoryColor(context, 'Health');
-      case EventCategory.social:
-        return _categoryColor(context, 'Social');
-      case EventCategory.shopping:
-        return _categoryColor(context, 'Shopping');
-      case EventCategory.other:
-        return _categoryColor(context, 'Other');
-      case null:
-        break;
+    if (event.category != null) {
+      return _categoryColor(context, event.category!);
     }
 
     final title = event.title.toLowerCase();
-    if (title.contains('meeting') || title.contains('call') || title.contains('work') || title.contains('standup') || title.contains('deadline')) {
-      return _categoryColor(context, 'Work');
-    } else if (title.contains('gym') || title.contains('workout') || title.contains('run') || title.contains('yoga') || title.contains('sport')) {
-      return _categoryColor(context, 'Health');
-    } else if (title.contains('doctor') || title.contains('med') || title.contains('health') || title.contains('dentist')) {
-      return _categoryColor(context, 'Health');
-    } else if (title.contains('birthday') || title.contains('party') || title.contains('social') || title.contains('hangout')) {
-      return _categoryColor(context, 'Social');
-    } else if (title.contains('shop') || title.contains('grocery') || title.contains('store')) {
-      return _categoryColor(context, 'Shopping');
-    } else if (title.contains('coffee') || title.contains('lunch') || title.contains('dinner') || title.contains('food')) {
-      return _categoryColor(context, 'Personal');
-    } else if (title.contains('travel') || title.contains('flight') || title.contains('trip')) {
-      return _categoryColor(context, 'Social');
+    if (title.contains('meeting') ||
+        title.contains('call') ||
+        title.contains('work') ||
+        title.contains('standup') ||
+        title.contains('deadline')) {
+      return _categoryColor(context, EventCategory.work);
+    } else if (title.contains('gym') ||
+        title.contains('workout') ||
+        title.contains('run') ||
+        title.contains('yoga') ||
+        title.contains('sport')) {
+      return _categoryColor(context, EventCategory.health);
+    } else if (title.contains('doctor') ||
+        title.contains('med') ||
+        title.contains('health') ||
+        title.contains('dentist')) {
+      return _categoryColor(context, EventCategory.health);
+    } else if (title.contains('birthday') ||
+        title.contains('party') ||
+        title.contains('social') ||
+        title.contains('hangout')) {
+      return _categoryColor(context, EventCategory.social);
+    } else if (title.contains('shop') ||
+        title.contains('grocery') ||
+        title.contains('store')) {
+      return _categoryColor(context, EventCategory.shopping);
+    } else if (title.contains('coffee') ||
+        title.contains('lunch') ||
+        title.contains('dinner') ||
+        title.contains('food')) {
+      return _categoryColor(context, EventCategory.personal);
+    } else if (title.contains('travel') ||
+        title.contains('flight') ||
+        title.contains('trip')) {
+      return _categoryColor(context, EventCategory.social);
     }
-    return _categoryColor(context, 'Work');
+    return _categoryColor(context, EventCategory.work);
   }
 
   IconData _getEventIcon() {
     final title = event.title.toLowerCase();
-    if (title.contains('meeting') || title.contains('standup') || title.contains('call')) {
+    if (title.contains('meeting') ||
+        title.contains('standup') ||
+        title.contains('call')) {
       return Icons.videocam_outlined;
-    } else if (title.contains('gym') || title.contains('workout') || title.contains('yoga')) {
+    } else if (title.contains('gym') ||
+        title.contains('workout') ||
+        title.contains('yoga')) {
       return Icons.fitness_center_outlined;
-    } else if (title.contains('doctor') || title.contains('med') || title.contains('health')) {
+    } else if (title.contains('doctor') ||
+        title.contains('med') ||
+        title.contains('health')) {
       return Icons.medical_services_outlined;
-    } else if (title.contains('lunch') || title.contains('dinner') || title.contains('coffee') || title.contains('food')) {
+    } else if (title.contains('lunch') ||
+        title.contains('dinner') ||
+        title.contains('coffee') ||
+        title.contains('food')) {
       return Icons.restaurant_outlined;
     } else if (title.contains('birthday')) {
       return Icons.cake_outlined;
@@ -87,7 +105,9 @@ class EventCard extends StatelessWidget {
       return Icons.flight_outlined;
     } else if (title.contains('email') || title.contains('message')) {
       return Icons.email_outlined;
-    } else if (title.contains('study') || title.contains('class') || title.contains('course')) {
+    } else if (title.contains('study') ||
+        title.contains('class') ||
+        title.contains('course')) {
       return Icons.school_outlined;
     }
     return Icons.event_outlined;
@@ -128,17 +148,17 @@ class EventCard extends StatelessWidget {
               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: isUpcoming
-                  ? Border.all(color: color.withOpacity(0.5), width: 2)
+                  ? Border.all(color: color.withValues(alpha: 0.5), width: 2)
                   : null,
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(isDark ? 0.2 : 0.1),
+                  color: color.withValues(alpha: isDark ? 0.2 : 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
                 if (!isDark)
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -150,7 +170,7 @@ class EventCard extends StatelessWidget {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(isDark ? 0.2 : 0.1),
+                    color: color.withValues(alpha: isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Stack(
@@ -174,7 +194,7 @@ class EventCard extends StatelessWidget {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: color.withOpacity(0.5),
+                                  color: color.withValues(alpha: 0.5),
                                   blurRadius: 4,
                                 ),
                               ],
@@ -197,10 +217,16 @@ class EventCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: event.isCompleted 
-                                    ? (isDark ? Colors.grey[500] : Colors.grey[400])
-                                    : (isDark ? Colors.white : const Color(0xFF202124)),
-                                decoration: event.isCompleted ? TextDecoration.lineThrough : null,
+                                color: event.isCompleted
+                                    ? (isDark
+                                        ? Colors.grey[500]
+                                        : Colors.grey[400])
+                                    : (isDark
+                                        ? Colors.white
+                                        : const Color(0xFF202124)),
+                                decoration: event.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -209,9 +235,10 @@ class EventCard extends StatelessWidget {
                           if (isUpcoming)
                             Container(
                               margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: color.withOpacity(0.2),
+                                color: color.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -229,9 +256,10 @@ class EventCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(isDark ? 0.2 : 0.1),
+                              color: color.withValues(alpha: isDark ? 0.2 : 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
@@ -252,7 +280,11 @@ class EventCard extends StatelessWidget {
                           ),
                           if (event.description != null) ...[
                             const SizedBox(width: 8),
-                            Icon(Icons.notes, size: 14, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                            Icon(Icons.notes,
+                                size: 14,
+                                color: isDark
+                                    ? Colors.grey[600]
+                                    : Colors.grey[400]),
                           ],
                         ],
                       ),
@@ -306,7 +338,7 @@ class EventCard extends StatelessWidget {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: _getEventColor(context).withOpacity(0.1),
+                    color: _getEventColor(context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -325,18 +357,23 @@ class EventCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF202124),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF202124),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          Icon(Icons.calendar_today,
+                              size: 14,
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600]),
                           const SizedBox(width: 4),
                           Text(
                             _cachedDateFormat.format(event.dateTime),
                             style: TextStyle(
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600],
                             ),
                           ),
                         ],
@@ -344,7 +381,10 @@ class EventCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(Icons.access_time, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          Icon(Icons.access_time,
+                              size: 14,
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600]),
                           const SizedBox(width: 4),
                           Text(
                             _cachedTimeFormat.format(event.dateTime),
@@ -365,19 +405,24 @@ class EventCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA),
+                  color: isDark
+                      ? const Color(0xFF2D2D2D)
+                      : const Color(0xFFF8F9FA),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.notes, size: 20, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    Icon(Icons.notes,
+                        size: 20,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600]),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         event.description!,
                         style: TextStyle(
-                          color: isDark ? Colors.white : const Color(0xFF202124),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF202124),
                         ),
                       ),
                     ),
@@ -395,7 +440,8 @@ class EventCard extends StatelessWidget {
                       _confirmDelete(context);
                     },
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    label: const Text('Delete', style: TextStyle(color: Colors.red)),
+                    label: const Text('Delete',
+                        style: TextStyle(color: Colors.red)),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -413,7 +459,8 @@ class EventCard extends StatelessWidget {
                       if (onDuplicate != null) onDuplicate!();
                     },
                     icon: Icon(Icons.copy, color: _getEventColor(context)),
-                    label: Text('Duplicate', style: TextStyle(color: _getEventColor(context))),
+                    label: Text('Duplicate',
+                        style: TextStyle(color: _getEventColor(context))),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: _getEventColor(context)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -433,9 +480,13 @@ class EventCard extends StatelessWidget {
                     icon: Icon(event.isCompleted ? Icons.replay : Icons.check),
                     label: Text(event.isCompleted ? 'Undo' : 'Done'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: event.isCompleted 
-                          ? (isDark ? const Color(0xFF81C995) : const Color(0xFF34A853))
-                          : (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)),
+                      backgroundColor: event.isCompleted
+                          ? (isDark
+                              ? const Color(0xFF81C995)
+                              : const Color(0xFF34A853))
+                          : (isDark
+                              ? const Color(0xFF8AB4F8)
+                              : const Color(0xFF1A73E8)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -458,12 +509,18 @@ class EventCard extends StatelessWidget {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        title: Text('Delete Event', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124))),
-        content: Text('Are you sure you want to delete "${event.title}"?', style: TextStyle(color: isDark ? Colors.grey[300] : Colors.grey[700])),
+        title: Text('Delete Event',
+            style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF202124))),
+        content: Text('Are you sure you want to delete "${event.title}"?',
+            style:
+                TextStyle(color: isDark ? Colors.grey[300] : Colors.grey[700])),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+            child: Text('Cancel',
+                style: TextStyle(
+                    color: isDark ? Colors.grey[400] : Colors.grey[600])),
           ),
           FilledButton(
             onPressed: () {

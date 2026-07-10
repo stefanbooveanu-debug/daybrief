@@ -62,7 +62,7 @@ class _ShareCalendarScreenState extends State<ShareCalendarScreen> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
             ),
             child: Column(
               children: [
@@ -78,7 +78,7 @@ class _ShareCalendarScreenState extends State<ShareCalendarScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     decoration: BoxDecoration(
-                      color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withOpacity(0.1),
+                      color: (isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8)).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8), width: 2),
                     ),

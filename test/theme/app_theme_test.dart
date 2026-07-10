@@ -1,45 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:day_brief/models/event.dart';
 import 'package:day_brief/theme/app_theme.dart';
 
 void main() {
   group('AppColors', () {
     test('defaultCategoryColors has the 6 canonical categories', () {
       expect(AppColors.defaultCategoryColors.keys.toSet(), {
-        'Work',
-        'Personal',
-        'Health',
-        'Social',
-        'Shopping',
-        'Other',
+        EventCategory.work,
+        EventCategory.personal,
+        EventCategory.health,
+        EventCategory.social,
+        EventCategory.shopping,
+        EventCategory.other,
       });
     });
 
     test('getCategoryColor returns the matching color', () {
-      expect(AppColors.getCategoryColor('Work'),
-          AppColors.defaultCategoryColors['Work']);
-      expect(AppColors.getCategoryColor('Health'),
-          AppColors.defaultCategoryColors['Health']);
+      expect(
+        AppColors.getCategoryColor(EventCategory.work),
+        AppColors.defaultCategoryColors[EventCategory.work],
+      );
+      expect(
+        AppColors.getCategoryColor(EventCategory.health),
+        AppColors.defaultCategoryColors[EventCategory.health],
+      );
     });
 
-    test('getCategoryColor falls back to "Other" for unknown categories', () {
-      expect(AppColors.getCategoryColor('SomethingWeird'),
-          AppColors.defaultCategoryColors['Other']);
+    test('getCategoryColor falls back to other for unknown via enum', () {
+      expect(
+        AppColors.colorForCategory(null),
+        AppColors.defaultCategoryColors[EventCategory.other],
+      );
     });
 
     group('getCategoryIcon', () {
       test('returns the right icon per category', () {
-        expect(AppColors.getCategoryIcon('Work'), Icons.work_outline);
-        expect(AppColors.getCategoryIcon('Personal'), Icons.person_outline);
-        expect(AppColors.getCategoryIcon('Health'), Icons.favorite_outline);
-        expect(AppColors.getCategoryIcon('Social'), Icons.people_outline);
-        expect(AppColors.getCategoryIcon('Shopping'),
+        expect(
+            AppColors.getCategoryIcon(EventCategory.work), Icons.work_outline);
+        expect(AppColors.getCategoryIcon(EventCategory.personal),
+            Icons.person_outline);
+        expect(AppColors.getCategoryIcon(EventCategory.health),
+            Icons.favorite_outline);
+        expect(AppColors.getCategoryIcon(EventCategory.social),
+            Icons.people_outline);
+        expect(AppColors.getCategoryIcon(EventCategory.shopping),
             Icons.shopping_cart_outlined);
-      });
-
-      test('falls back to Icons.event for unknown', () {
-        expect(AppColors.getCategoryIcon('Asdf'), Icons.event);
-        expect(AppColors.getCategoryIcon(''), Icons.event);
+        expect(AppColors.getCategoryIcon(EventCategory.other), Icons.event);
       });
     });
   });
@@ -57,8 +64,7 @@ void main() {
       expect(t.brightness, Brightness.dark);
     });
 
-    test('both themes register CategoryColors with all default categories',
-        () {
+    test('both themes register CategoryColors with all default categories', () {
       for (final t in [AppTheme.lightTheme, AppTheme.darkTheme]) {
         final ext = t.extension<CategoryColors>();
         expect(ext, isNotNull,
@@ -72,27 +78,32 @@ void main() {
   group('CategoryColors theme extension', () {
     const ext = CategoryColors(AppColors.defaultCategoryColors);
 
-    test('colorFor returns the named color', () {
-      expect(ext.colorFor('Work'),
-          AppColors.defaultCategoryColors['Work']);
+    test('colorForCategory returns the named color', () {
+      expect(
+        ext.colorForCategory(EventCategory.work),
+        AppColors.defaultCategoryColors[EventCategory.work],
+      );
     });
 
-    test('colorFor falls back to "Other" when name is null or unknown', () {
-      expect(ext.colorFor(null),
-          AppColors.defaultCategoryColors['Other']);
-      expect(ext.colorFor('Mystery'),
-          AppColors.defaultCategoryColors['Other']);
+    test('colorForCategory falls back to other when null', () {
+      expect(
+        ext.colorForCategory(null),
+        AppColors.defaultCategoryColors[EventCategory.other],
+      );
     });
 
-    test('colorFor on user-customized values returns the override', () {
+    test('colorForCategory on user-customized values returns the override', () {
       const customWork = Color(0xFF000001);
-      final custom = CategoryColors(<String, Color>{
+      // ignore: prefer_const_constructors, prefer_const_literals_to_create_immutables — spread map cannot be const
+      final custom = CategoryColors(<EventCategory, Color>{
         ...AppColors.defaultCategoryColors,
-        'Work': customWork,
+        EventCategory.work: customWork,
       });
-      expect(custom.colorFor('Work'), customWork);
-      expect(custom.colorFor('Health'),
-          AppColors.defaultCategoryColors['Health']);
+      expect(custom.colorForCategory(EventCategory.work), customWork);
+      expect(
+        custom.colorForCategory(EventCategory.health),
+        AppColors.defaultCategoryColors[EventCategory.health],
+      );
     });
 
     test('copyWith without args returns equivalent values', () {
@@ -102,18 +113,24 @@ void main() {
 
     test('copyWith with new map replaces values', () {
       const customWork = Color(0xFF111111);
-      final clone = ext.copyWith(values: {'Work': customWork});
-      expect(clone.values, {'Work': customWork});
+      final clone = ext.copyWith(
+        values: {EventCategory.work: customWork},
+      );
+      expect(clone.values, {EventCategory.work: customWork});
     });
 
     test('lerp(t=0) preserves left side, lerp(t=1) takes right side', () {
-      const a = CategoryColors(<String, Color>{'Work': Color(0xFF000000)});
-      const b = CategoryColors(<String, Color>{'Work': Color(0xFFFFFFFF)});
+      const a = CategoryColors(<EventCategory, Color>{
+        EventCategory.work: Color(0xFF000000),
+      });
+      const b = CategoryColors(<EventCategory, Color>{
+        EventCategory.work: Color(0xFFFFFFFF),
+      });
 
       final lerped0 = a.lerp(b, 0.0);
       final lerped1 = a.lerp(b, 1.0);
-      expect(lerped0.values['Work'], const Color(0xFF000000));
-      expect(lerped1.values['Work'], const Color(0xFFFFFFFF));
+      expect(lerped0.values[EventCategory.work], const Color(0xFF000000));
+      expect(lerped1.values[EventCategory.work], const Color(0xFFFFFFFF));
     });
 
     test('lerp with a non-CategoryColors other returns `this`', () {

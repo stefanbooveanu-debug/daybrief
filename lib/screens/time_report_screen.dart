@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/event_provider.dart';
 import '../models/event.dart';
 import '../theme/app_theme.dart';
 
 class TimeReportScreen extends StatelessWidget {
-  final List<Event>? events;
-  
-  const TimeReportScreen({super.key, this.events});
+  const TimeReportScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,129 +14,193 @@ class TimeReportScreen extends StatelessWidget {
     final eventList = eventProvider.events;
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekEvents = eventList.where((e) => e.dateTime.isAfter(weekStart)).toList();
-    
-    final categoryCount = <String, int>{};
+    final weekEvents =
+        eventList.where((e) => e.dateTime.isAfter(weekStart)).toList();
+
+    final categoryCount = <EventCategory, int>{};
     for (final e in weekEvents) {
-      final cat = (e.category ?? EventCategory.other).displayName;
+      final cat = e.category ?? EventCategory.other;
       categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
     }
-    
-    final sorted = categoryCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    final sorted = categoryCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     final categoryColors = Theme.of(context).extension<CategoryColors>();
-    Color colorFor(String name) => categoryColors?.colorFor(name) ??
-        AppColors.getCategoryColor(name);
-    
+    Color colorFor(EventCategory category) =>
+        categoryColors?.colorForCategory(category) ??
+        AppColors.getCategoryColor(category);
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF5F6368)),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? Colors.white : const Color(0xFF5F6368)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Time Report', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124), fontWeight: FontWeight.bold)),
+        title: Text('Time Report',
+            style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF202124),
+                fontWeight: FontWeight.bold)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _buildSummaryCard(weekEvents.length, sorted.isNotEmpty ? sorted.first.key : 'None', isDark),
+          _buildSummaryCard(
+            weekEvents.length,
+            sorted.isNotEmpty ? sorted.first.key.displayName : 'None',
+            isDark,
+          ),
           const SizedBox(height: 24),
-          Text('This Week by Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
+          Text('This Week by Category',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF202124))),
           const SizedBox(height: 16),
           if (sorted.isEmpty)
-            Center(child: Text('No events this week', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])))
+            Center(
+                child: Text('No events this week',
+                    style: TextStyle(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600])))
           else
-            ...sorted.map((entry) => _buildCategoryRow(entry.key, entry.value, weekEvents.length, colorFor(entry.key), isDark)),
+            ...sorted.map((entry) => _buildCategoryRow(
+                  entry.key.displayName,
+                  entry.value,
+                  weekEvents.length,
+                  colorFor(entry.key),
+                  isDark,
+                )),
           const SizedBox(height: 24),
-          Text('Daily Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
+          Text('Daily Breakdown',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF202124))),
           const SizedBox(height: 16),
           _buildDailyChart(weekEvents, isDark),
         ],
       ),
     );
   }
-  
+
   Widget _buildSummaryCard(int totalEvents, String topCategory, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFF8AB4F8), const Color(0xFF1A73E8)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8AB4F8), Color(0xFF1A73E8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFF1A73E8).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Weekly Summary', style: TextStyle(color: Colors.white70, fontSize: 14)),
-          const SizedBox(height: 8),
-          Text('$totalEvents', style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold)),
-          Text('events scheduled', style: const TextStyle(color: Colors.white70, fontSize: 16)),
-          const SizedBox(height: 16),
-          if (topCategory != 'None') ...[
-            const Divider(color: Colors.white24),
-            const SizedBox(height: 8),
-            Text('Top category: $topCategory', style: const TextStyle(color: Colors.white, fontSize: 14)),
-          ],
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildCategoryRow(String category, int count, int total, Color color, bool isDark) {
-    final percentage = total > 0 ? (count / total * 100).round() : 0;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(category, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF202124))),
-            Text('$count events ($percentage%)', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
-          ]),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: percentage / 100, backgroundColor: color.withOpacity(0.2), valueColor: AlwaysStoppedAnimation(color), minHeight: 8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1A73E8).withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Weekly Summary',
+              style: TextStyle(color: Colors.white70, fontSize: 14)),
+          const SizedBox(height: 8),
+          Text('$totalEvents',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold)),
+          Text('events this week',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8))),
+          const SizedBox(height: 12),
+          Text('Most active: $topCategory',
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
-  
-  Widget _buildDailyChart(List<Event> weekEvents, bool isDark) {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    
+
+  Widget _buildCategoryRow(
+    String category,
+    int count,
+    int total,
+    Color color,
+    bool isDark,
+  ) {
+    final pct = total > 0 ? (count / total * 100).round() : 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(category,
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : const Color(0xFF202124))),
+          ),
+          Text('$count ($pct%)',
+              style: TextStyle(
+                  color: isDark ? Colors.grey[400] : Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyChart(List<Event> events, bool isDark) {
+    final days = List.generate(7, (i) {
+      final d = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1 - i));
+      return DateTime(d.year, d.month, d.day);
+    });
+    final counts = days.map((day) {
+      return events
+          .where((e) =>
+              e.dateTime.year == day.year &&
+              e.dateTime.month == day.month &&
+              e.dateTime.day == day.day)
+          .length;
+    }).toList();
+    final maxCount = counts.isEmpty ? 1 : counts.reduce((a, b) => a > b ? a : b);
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: List.generate(7, (index) {
-        final dayDate = weekStart.add(Duration(days: index));
-        final dayEvents = weekEvents.where((e) => e.dateTime.day == dayDate.day && e.dateTime.month == dayDate.month).length;
-        final isToday = dayDate.day == now.day && dayDate.month == now.month;
-        final maxHeight = 100.0;
-        final barHeight = dayEvents > 0 ? (dayEvents / 5 * maxHeight).clamp(20.0, maxHeight) : 10.0;
-        
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: List.generate(7, (i) {
+        final height = maxCount > 0 ? (counts[i] / maxCount * 80) : 0.0;
         return Column(
           children: [
-            Text('${dayEvents}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
-            const SizedBox(height: 8),
             Container(
-              width: 30,
-              height: barHeight,
+              width: 24,
+              height: height.clamp(4.0, 80.0),
               decoration: BoxDecoration(
-                color: isToday ? const Color(0xFF1A73E8) : const Color(0xFF8AB4F8).withOpacity(0.5),
-                borderRadius: BorderRadius.circular(6),
+                color: const Color(0xFF1A73E8),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
             const SizedBox(height: 8),
-            Text(days[index], style: TextStyle(fontSize: 12, color: isToday ? const Color(0xFF1A73E8) : (isDark ? Colors.grey[400] : Colors.grey[600]), fontWeight: isToday ? FontWeight.bold : FontWeight.normal)),
+            Text(
+              ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i],
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600]),
+            ),
           ],
         );
       }),
