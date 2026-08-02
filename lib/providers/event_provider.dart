@@ -7,6 +7,7 @@ import '../models/event.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/event_repository.dart';
 import '../utils/async_value.dart';
+import '../utils/demo_seed.dart';
 import '../utils/logger.dart';
 
 class EventProvider with ChangeNotifier {
@@ -82,12 +83,44 @@ class EventProvider with ChangeNotifier {
 
     try {
       _events = await _eventRepository.getLocalEvents();
+      if (_activeDemoMode) {
+        await _ensureDemoSeedEvents();
+      }
       _state = AsyncData(List.unmodifiable(_events));
     } catch (e, st) {
       _state = AsyncError<List<Event>>(e, st);
     }
 
     notifyListeners();
+  }
+
+  /// Inserts missing demo seeds and refreshes any existing seed IDs in place
+  /// so location/copy updates (e.g. Nokia Timișoara) show up on next load.
+  Future<void> _ensureDemoSeedEvents() async {
+    final seeds = buildDemoSeedEvents();
+    final byId = {for (final e in _events) e.id: e};
+    var changed = false;
+
+    for (final seed in seeds) {
+      final existing = byId[seed.id];
+      if (existing == null) {
+        await _eventRepository.addEvent(seed, userId: null);
+        byId[seed.id] = seed;
+        changed = true;
+      } else if (existing.title != seed.title ||
+          existing.location != seed.location ||
+          existing.description != seed.description) {
+        await _eventRepository.updateEvent(seed, userId: null);
+        byId[seed.id] = seed;
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+
+    _events = byId.values.toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    DayBriefLog.info('Updated demo seed events for Nokia Timișoara');
   }
 
   void _listenToFirestoreEvents(String userId) {

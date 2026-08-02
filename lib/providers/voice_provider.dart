@@ -92,6 +92,7 @@ class VoiceProvider with ChangeNotifier {
     required String userId,
     VoiceTemplate? Function(String)? matchTemplate,
     Future<void> Function(Event)? onAddEvent,
+    bool requireWakeWord = true,
   }) async {
     if (matchTemplate != null) {
       final template = matchTemplate(text);
@@ -101,7 +102,11 @@ class VoiceProvider with ChangeNotifier {
         return VoiceSpoken('Added ${event.title}');
       }
     }
-    return _commandService.processCommand(text, events);
+    return _commandService.processCommand(
+      text,
+      events,
+      requireWakeWord: requireWakeWord,
+    );
   }
 
   Event _eventFromTemplate(VoiceTemplate template, String userId) {

@@ -31,9 +31,9 @@ void main() {
       expect(result, isA<VoiceNoOp>());
     });
 
-    test('"hey daybrief" alone returns VoiceNoOp', () async {
+    test('"hey daybrief" alone prompts for a command', () async {
       final result = await svc.processCommand('hey daybrief', []);
-      expect(result, isA<VoiceNoOp>());
+      expect(result, isA<VoiceSpoken>());
     });
 
     test('plain "daybrief" also triggers wake (lenient mode)', () async {
@@ -44,15 +44,15 @@ void main() {
 
   group('processCommand — date/time queries', () {
     test('"what day is it" speaks today\'s date', () async {
-      final result = await svc.processCommand(
-          'hey daybrief what day is it', []) as VoiceSpoken;
+      final result = await svc.processCommand('hey daybrief what day is it', [])
+          as VoiceSpoken;
       expect(result.text, contains('Today is '));
       expect(result.text, contains('${DateTime.now().year}'));
     });
 
     test('"what time is it" speaks current time', () async {
-      final result = await svc.processCommand(
-          'hey daybrief what time is it', []) as VoiceSpoken;
+      final result = await svc
+          .processCommand('hey daybrief what time is it', []) as VoiceSpoken;
       expect(result.text, startsWith("It's "));
       expect(result.text, anyOf(contains('AM'), contains('PM')));
     });
@@ -61,8 +61,8 @@ void main() {
   group('processCommand — schedule queries', () {
     test('"my schedule" with no events returns the empty-day message',
         () async {
-      final result =
-          await svc.processCommand('hey daybrief my schedule', []) as VoiceSpoken;
+      final result = await svc.processCommand('hey daybrief my schedule', [])
+          as VoiceSpoken;
       expect(result.text, contains('nothing planned'));
     });
 
@@ -70,7 +70,7 @@ void main() {
       final today = DateTime.now();
       final events = [
         ev(dt: DateTime(today.year, today.month, today.day, 9)),
-        ev(title: 'Gym',     dt: DateTime(today.year, today.month, today.day, 18)),
+        ev(title: 'Gym', dt: DateTime(today.year, today.month, today.day, 18)),
       ];
       final result = await svc.processCommand(
           'hey daybrief what do i have today', events) as VoiceSpoken;
@@ -97,26 +97,23 @@ void main() {
     });
 
     test('"hello" → greeting VoiceSpoken', () async {
-      final r =
-          await svc.processCommand('daybrief hello', []) as VoiceSpoken;
+      final r = await svc.processCommand('daybrief hello', []) as VoiceSpoken;
       expect(r.text, contains('How can I help'));
     });
 
     test('"help" → help text', () async {
-      final r =
-          await svc.processCommand('daybrief help', []) as VoiceSpoken;
+      final r = await svc.processCommand('daybrief help', []) as VoiceSpoken;
       expect(r.text, contains('what do I have today'));
     });
 
     test('"thanks" → polite reply', () async {
-      final r =
-          await svc.processCommand('daybrief thanks', []) as VoiceSpoken;
+      final r = await svc.processCommand('daybrief thanks', []) as VoiceSpoken;
       expect(r.text, "You're welcome!");
     });
 
     test('unknown command → "not sure how to help"', () async {
-      final r = await svc.processCommand(
-          'daybrief asdfqwerzxcv', []) as VoiceSpoken;
+      final r =
+          await svc.processCommand('daybrief asdfqwerzxcv', []) as VoiceSpoken;
       expect(r.text, contains("I'm not sure"));
     });
   });
@@ -130,7 +127,8 @@ void main() {
         title: 'Project sync',
         dt: DateTime(today.year, today.month, today.day, 15),
       );
-      final result = svc.parseMoveEvent('move my 3pm to 5pm', [e]) as VoiceMoveEvent;
+      final result =
+          svc.parseMoveEvent('move my 3pm to 5pm', [e]) as VoiceMoveEvent;
 
       expect(result.eventId, 'meet-3');
       expect(result.newTime.hour, 17);
@@ -298,18 +296,31 @@ void main() {
 
   group('static formatEventsForSpeech', () {
     test('empty', () {
-      expect(VoiceCommandService.formatEventsForSpeech([]), 'No events scheduled');
+      expect(
+          VoiceCommandService.formatEventsForSpeech([]), 'No events scheduled');
     });
 
     test('singular vs plural pluralization', () {
       final one = VoiceCommandService.formatEventsForSpeech([
-        Event(id: '1', title: 'A', dateTime: DateTime(2026, 1, 1, 9), userId: 'u'),
+        Event(
+            id: '1',
+            title: 'A',
+            dateTime: DateTime(2026, 1, 1, 9),
+            userId: 'u'),
       ]);
       expect(one, startsWith('You have 1 event.'));
 
       final two = VoiceCommandService.formatEventsForSpeech([
-        Event(id: '1', title: 'A', dateTime: DateTime(2026, 1, 1, 9), userId: 'u'),
-        Event(id: '2', title: 'B', dateTime: DateTime(2026, 1, 1, 10), userId: 'u'),
+        Event(
+            id: '1',
+            title: 'A',
+            dateTime: DateTime(2026, 1, 1, 9),
+            userId: 'u'),
+        Event(
+            id: '2',
+            title: 'B',
+            dateTime: DateTime(2026, 1, 1, 10),
+            userId: 'u'),
       ]);
       expect(two, startsWith('You have 2 events.'));
       expect(two, contains('A at 9:00 AM'));
@@ -346,8 +357,8 @@ void main() {
           category: EventCategory.health,
         ),
       ];
-      final r = await svc.processCommand('daybrief insights', events)
-          as VoiceSpoken;
+      final r =
+          await svc.processCommand('daybrief insights', events) as VoiceSpoken;
       expect(r.text, contains('busy week'));
     });
 
@@ -361,8 +372,8 @@ void main() {
           dt: DateTime(today.year, today.month, today.day, 9 + i),
         ),
       );
-      final r = await svc.processCommand('daybrief insights', events)
-          as VoiceSpoken;
+      final r =
+          await svc.processCommand('daybrief insights', events) as VoiceSpoken;
       expect(r.text, contains('exercise'));
     });
 
@@ -378,8 +389,8 @@ void main() {
           dt: DateTime(today.year, today.month, today.day, 9 + (i % 8)),
         ),
       );
-      final r = await svc.processCommand('daybrief insights', events)
-          as VoiceSpoken;
+      final r =
+          await svc.processCommand('daybrief insights', events) as VoiceSpoken;
       expect(r.text, contains('busy week'));
       expect(r.text, contains('exercise'));
     });

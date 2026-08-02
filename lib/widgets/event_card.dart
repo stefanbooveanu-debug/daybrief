@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../models/event.dart';
+import '../services/places_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 
@@ -259,7 +262,8 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+                              color:
+                                  color.withValues(alpha: isDark ? 0.2 : 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
@@ -288,6 +292,51 @@ class EventCard extends StatelessWidget {
                           ],
                         ],
                       ),
+                      if (event.location != null &&
+                          event.location!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: () => _openLocationInMaps(event.location!),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.place_outlined,
+                                size: 14,
+                                color: isDark
+                                    ? Colors.grey[500]
+                                    : Colors.grey[500],
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  event.location!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: isDark
+                                        ? Colors.grey[600]
+                                        : Colors.grey[400],
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.open_in_new_rounded,
+                                size: 12,
+                                color: isDark
+                                    ? Colors.grey[500]
+                                    : Colors.grey[500],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -305,6 +354,11 @@ class EventCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openLocationInMaps(String location) async {
+    final uri = PlacesService.mapsSearchUri(location);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   void _showEventDetails(BuildContext context) {
@@ -400,8 +454,49 @@ class EventCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (event.location != null &&
+                event.location!.trim().isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Material(
+                color:
+                    isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: () => _openLocationInMaps(event.location!),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.place_outlined,
+                            size: 20,
+                            color:
+                                isDark ? Colors.grey[400] : Colors.grey[600]),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            event.location!,
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF202124),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.map_outlined,
+                          size: 20,
+                          color: _getEventColor(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             if (event.description != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(

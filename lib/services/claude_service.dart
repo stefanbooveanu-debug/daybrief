@@ -3,21 +3,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../config/api_base.dart';
 import '../models/event.dart';
 
 /// Calls the DayBrief Claude proxy (`server.js`) instead of Anthropic directly.
 /// AI features are intended for web builds served via `node server.js`.
 class ClaudeService {
-  static const String _apiBase = String.fromEnvironment(
-    'CLAUDE_API_BASE',
-  );
-
-  static Uri _uri(String path) {
-    if (_apiBase.isNotEmpty) {
-      return Uri.parse('$_apiBase$path');
-    }
-    return Uri.parse(path);
-  }
+  static Uri _uri(String path) => ApiBase.uri(path);
 
   static bool get isSupportedOnPlatform => kIsWeb;
 
@@ -63,7 +55,8 @@ class ClaudeService {
       };
 
   /// Parse natural language text into an Event object.
-  static Future<Event?> parseEventFromText(String userText, String userId) async {
+  static Future<Event?> parseEventFromText(
+      String userText, String userId) async {
     final result = await _post('/api/claude/parse-event', {
       'userText': userText,
       'userId': userId,
@@ -81,8 +74,8 @@ class ClaudeService {
         title: eventJson['title']?.toString() ?? 'New Event',
         dateTime: DateTime.parse(eventJson['dateTime'].toString()),
         description: eventJson['description']?.toString(),
-        category: EventCategory.parse(eventJson['category']) ??
-            EventCategory.other,
+        category:
+            EventCategory.parse(eventJson['category']) ?? EventCategory.other,
         location: eventJson['location']?.toString(),
         userId: eventJson['userId']?.toString() ?? userId,
       );
@@ -108,7 +101,8 @@ class ClaudeService {
   }
 
   /// Answer questions about the calendar.
-  static Future<String> answerQuestion(String question, List<Event> events) async {
+  static Future<String> answerQuestion(
+      String question, List<Event> events) async {
     final result = await _post('/api/claude/answer-question', {
       'question': question,
       'events': events.map(_eventToJson).toList(),

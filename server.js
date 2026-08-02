@@ -13,6 +13,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const GEMINI_MAX_TOKENS = Number(process.env.GEMINI_MAX_TOKENS || 1024);
 const LLM_PROVIDER = GEMINI_API_KEY ? 'gemini' : (ANTHROPIC_API_KEY ? 'anthropic' : null);
+const GOOGLE_MAPS_API_KEY =
+  process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY || '';
 
 if (!LLM_PROVIDER) {
   console.warn(
@@ -20,6 +22,14 @@ if (!LLM_PROVIDER) {
   );
 } else {
   console.log(`LLM provider: ${LLM_PROVIDER}`);
+}
+
+if (!GOOGLE_MAPS_API_KEY) {
+  console.warn(
+    'Warning: GOOGLE_MAPS_API_KEY not set. /api/places/* routes will return 503.',
+  );
+} else {
+  console.log('Google Places: enabled');
 }
 
 const mimeTypes = {
@@ -56,12 +66,101 @@ function readJsonBody(req) {
   });
 }
 
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+
 function sendJson(res, statusCode, payload, extraHeaders = {}) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
+    ...corsHeaders(),
     ...extraHeaders,
   });
   res.end(JSON.stringify(payload));
+}
+
+function httpsGetJson(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8');
+          try {
+            resolve({
+              statusCode: response.statusCode || 500,
+              data: JSON.parse(body),
+            });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      })
+      .on('error', reject);
+  });
+}
+
+async function handlePlacesRoute(req, res, pathname) {
+  if (!GOOGLE_MAPS_API_KEY) {
+    sendJson(res, 503, {
+      success: false,
+      error:
+        'Places proxy is not configured. Set GOOGLE_MAPS_API_KEY (Places API enabled).',
+    });
+    return;
+  }
+
+  if (req.method !== 'GET') {
+    sendJson(res, 405, { success: false, error: 'Method not allowed' });
+    return;
+  }
+
+  try {
+    if (pathname === '/api/places/autocomplete') {
+      const url = new URL(req.url, `http://${HOST}:${PORT}`);
+      const input = (url.searchParams.get('input') || '').trim();
+      if (input.length < 2) {
+        sendJson(res, 200, { success: true, predictions: [] });
+        return;
+      }
+
+      const endpoint = new URL(
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+      );
+      endpoint.searchParams.set('input', input);
+      endpoint.searchParams.set('key', GOOGLE_MAPS_API_KEY);
+      const language = url.searchParams.get('language');
+      if (language) endpoint.searchParams.set('language', language);
+
+      const result = await httpsGetJson(endpoint.toString());
+      if (result.data.status && result.data.status !== 'OK' && result.data.status !== 'ZERO_RESULTS') {
+        sendJson(res, 502, {
+          success: false,
+          error: result.data.error_message || result.data.status || 'Places request failed',
+        });
+        return;
+      }
+
+      const predictions = (result.data.predictions || []).map((p) => ({
+        placeId: p.place_id,
+        description: p.description,
+        mainText: p.structured_formatting?.main_text || p.description,
+        secondaryText: p.structured_formatting?.secondary_text || '',
+      }));
+
+      sendJson(res, 200, { success: true, predictions });
+      return;
+    }
+
+    sendJson(res, 404, { success: false, error: 'Unknown Places route' });
+  } catch (error) {
+    sendJson(res, 500, { success: false, error: String(error) });
+  }
 }
 
 function forwardAnthropicRateLimitHeaders(upstreamHeaders, targetHeaders) {
@@ -458,8 +557,19 @@ function serveStatic(req, res) {
 const server = http.createServer(async (req, res) => {
   const pathname = req.url.split('?')[0];
 
+  if (pathname.startsWith('/api/') && req.method === 'OPTIONS') {
+    res.writeHead(204, corsHeaders());
+    res.end();
+    return;
+  }
+
   if (pathname.startsWith('/api/claude/')) {
     await handleClaudeRoute(req, res, pathname);
+    return;
+  }
+
+  if (pathname.startsWith('/api/places/')) {
+    await handlePlacesRoute(req, res, pathname);
     return;
   }
 
@@ -470,5 +580,8 @@ server.listen(PORT, HOST, () => {
   console.log(`DayBrief server running at http://${HOST}:${PORT}`);
   if (!LLM_PROVIDER) {
     console.log('Set GEMINI_API_KEY (recommended) or ANTHROPIC_API_KEY before starting to enable AI routes.');
+  }
+  if (!GOOGLE_MAPS_API_KEY) {
+    console.log('Set GOOGLE_MAPS_API_KEY to enable Google Places location suggestions.');
   }
 });

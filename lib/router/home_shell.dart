@@ -12,7 +12,6 @@ import '../utils/async_value.dart';
 import '../widgets/add_event_sheet.dart';
 import '../widgets/event_card.dart';
 import '../widgets/voice_assistant_button.dart';
-import '../widgets/animated_theme.dart';
 import 'package:intl/intl.dart';
 
 class HomeShell extends StatefulWidget {
@@ -186,47 +185,44 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scope = AppScope.of(context);
+    final isDark = scope.isDarkMode;
     final bgColor = isDark ? const Color(0xFF1A0E00) : const Color(0xFFFFF5EC);
     final cardColor = isDark ? const Color(0xFF2A1A0A) : Colors.white;
     final textColor =
         isDark ? const Color(0xFFFFF5EC) : const Color(0xFF1A0A00);
     final viewIndex = _currentViewIndex(context);
-    final scope = AppScope.of(context);
 
-    return SmoothThemeTransition(
-      isDark: isDark,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        body: SafeArea(
-          child: Column(
-            children: [
-              FadeTransition(
-                opacity: _headerFade,
-                child: _buildHeader(isDark, textColor, cardColor),
-              ),
-              _buildViewSelector(isDark, textColor, viewIndex),
-              if (viewIndex == 0) _buildDateNavigator(isDark, textColor),
-              if (viewIndex == 0)
-                Expanded(
-                  child: DayViewBody(
-                    selectedDay: _selectedDay,
-                    isDark: isDark,
-                    textColor: textColor,
-                    categoryColors: scope.categoryColors,
-                  ),
-                )
-              else
-                Expanded(child: widget.child),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            FadeTransition(
+              opacity: _headerFade,
+              child: _buildHeader(isDark, textColor, cardColor),
+            ),
+            _buildViewSelector(isDark, textColor, viewIndex),
+            if (viewIndex == 0) _buildDateNavigator(isDark, textColor),
+            if (viewIndex == 0)
+              Expanded(
+                child: DayViewBody(
+                  selectedDay: _selectedDay,
+                  isDark: isDark,
+                  textColor: textColor,
+                  categoryColors: scope.categoryColors,
+                ),
+              )
+            else
+              Expanded(child: widget.child),
+          ],
         ),
-        floatingActionButton: viewIndex == 0
-            ? ScaleTransition(scale: _fabAnim, child: _buildFAB())
-            : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: _buildBottomBar(isDark, cardColor, viewIndex),
       ),
+      floatingActionButton: viewIndex == 0
+          ? ScaleTransition(scale: _fabAnim, child: _buildFAB())
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: _buildBottomBar(isDark, cardColor, viewIndex),
     );
   }
 

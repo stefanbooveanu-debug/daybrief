@@ -9,12 +9,14 @@ class AppScope extends InheritedWidget {
     required this.categoryColors,
     required this.onCategoryColorsChanged,
     required this.onThemeChanged,
+    required this.isDarkMode,
     super.key,
   });
 
   final Map<EventCategory, Color> categoryColors;
   final ValueChanged<Map<EventCategory, Color>> onCategoryColorsChanged;
   final ValueChanged<bool> onThemeChanged;
+  final bool isDarkMode;
 
   static AppScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
@@ -24,5 +26,6 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      oldWidget.categoryColors != categoryColors;
+      oldWidget.categoryColors != categoryColors ||
+      oldWidget.isDarkMode != isDarkMode;
 }

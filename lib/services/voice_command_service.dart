@@ -33,7 +33,11 @@ class VoiceSpoken extends VoiceAction {
 class VoiceCommandService {
   static const String wakeWord = 'hey daybrief';
 
-  Future<VoiceAction> processCommand(String text, List<Event> events) async {
+  Future<VoiceAction> processCommand(
+    String text,
+    List<Event> events, {
+    bool requireWakeWord = true,
+  }) async {
     final lowerText = text.toLowerCase();
     final hasWakeWord =
         lowerText.contains(wakeWord) || lowerText.contains('daybrief');
@@ -41,8 +45,13 @@ class VoiceCommandService {
         ? lowerText.replaceAll(RegExp(r'hey daybrief|daybrief'), '').trim()
         : lowerText;
 
-    if (!hasWakeWord) {
+    // Mic FAB already arms listening — don't force "Hey DayBrief" in the same
+    // utterance (critical for live demos).
+    if (requireWakeWord && !hasWakeWord) {
       return const VoiceNoOp();
+    }
+    if (commandText.isEmpty) {
+      return const VoiceSpoken('How can I help with your schedule?');
     }
 
     if (commandText.contains('what day is it') ||

@@ -50,6 +50,19 @@ node server.js
 
 > **Note:** You no longer need `lib/config/app_config.dart`. Firebase config is already in the repo. AI buttons appear on web builds only (`flutter run -d chrome` or `flutter build web` + `node server.js`).
 
+### Optional: Google Places (location autocomplete)
+
+Location suggestions use Google Places through `server.js`. Create a Maps key in Google Cloud with **Places API** enabled, then:
+
+```bash
+export GOOGLE_MAPS_API_KEY="your-maps-api-key"
+node server.js
+```
+
+Without this key, you can still type any location and open it in Google Maps; autocomplete suggestions will be empty.
+
+During `flutter run -d chrome`, the app calls `http://127.0.0.1:8080/api/places/*`, so keep `node server.js` running.
+
 ---
 
 ## Step 4: Run the App

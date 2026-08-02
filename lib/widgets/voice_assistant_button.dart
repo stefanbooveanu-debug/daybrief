@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/event.dart';
-import '../providers/voice_provider.dart';
-import '../providers/event_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/event_provider.dart';
+import '../providers/voice_provider.dart';
 import '../providers/voice_template_provider.dart';
 import '../services/voice_command_service.dart';
+import 'add_event_sheet.dart';
 
 class VoiceAssistantButton extends StatefulWidget {
   const VoiceAssistantButton({super.key});
@@ -77,7 +79,8 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
     final authProvider = context.read<AuthProvider>();
     final templateProvider = context.read<VoiceTemplateProvider>();
 
-    if (!voiceProvider.isWakeWord(text)) return;
+    // Button press already activated listening — process any command.
+    if (text.trim().isEmpty) return;
 
     _animationController.stop();
     _animationController.reset();
@@ -88,13 +91,23 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
       userId: authProvider.userId ?? '',
       matchTemplate: templateProvider.matchTemplate,
       onAddEvent: eventProvider.addEvent,
+      requireWakeWord: false,
     );
+
+    if (!mounted) return;
 
     switch (action) {
       case VoiceNoOp():
         return;
       case VoiceShowAddEvent():
         await voiceProvider.speak('Opening add event');
+        if (!mounted) return;
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => const AddEventSheet(),
+        );
       case VoiceMoveEvent(eventId: final id, newTime: final time):
         final target = _findById(eventProvider.events, id);
         if (target != null) {
@@ -162,7 +175,7 @@ class _VoiceAssistantButtonState extends State<VoiceAssistantButton>
                       ? 'Speaking...'
                       : isListening
                           ? 'Listening...'
-                          : 'Hey DayBrief',
+                          : 'Ask DayBrief',
                   style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w500),
                 ),

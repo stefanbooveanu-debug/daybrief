@@ -45,6 +45,22 @@ void main() {
     expect(find.text('9:30 AM'), findsOneWidget);
   });
 
+  testWidgets('renders location when present', (tester) async {
+    await tester.pumpWidget(_wrap(EventCard(
+      event: Event(
+        id: 'e1',
+        title: 'Meeting',
+        dateTime: DateTime.now().add(const Duration(days: 1)),
+        category: EventCategory.work,
+        userId: 'u',
+        location: 'Room 12B',
+      ),
+      onDelete: () {},
+    )));
+    expect(find.text('Room 12B'), findsOneWidget);
+    expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+  });
+
   testWidgets('onDelete fires when card is swiped to dismiss', (tester) async {
     var deleted = false;
     await tester.pumpWidget(_wrap(EventCard(

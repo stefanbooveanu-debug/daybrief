@@ -158,6 +158,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
   }
 
   void _onThemeChanged(bool isDark) {
+    if (_isDarkMode == isDark) return;
     setState(() => _isDarkMode = isDark);
     unawaited(_saveDarkMode(isDark));
   }
@@ -228,6 +229,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
         categoryColors: _categoryColors,
         onCategoryColorsChanged: _onCategoryColorsChanged,
         onThemeChanged: _onThemeChanged,
+        isDarkMode: _isDarkMode,
         child: ListenableBuilder(
           listenable: _settingsProvider,
           builder: (context, _) {
@@ -244,6 +246,7 @@ class _DayBriefAppState extends State<DayBriefApp> {
                 GlobalCupertinoLocalizations.delegate,
               ],
               themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              themeAnimationDuration: Duration.zero,
               theme: AppTheme.lightTheme.copyWith(
                 extensions: <ThemeExtension<dynamic>>[
                   CategoryColors(_categoryColors),
