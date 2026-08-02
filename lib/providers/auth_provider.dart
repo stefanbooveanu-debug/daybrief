@@ -1,26 +1,32 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+
+import '../repositories/auth_repository.dart';
+import '../utils/async_value.dart';
 
 class AuthProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  bool _isLoading = false;
-  String? _error;
-  bool _isDemoMode = false;
-  User? _user;
-
-  AuthProvider() {
-    // Listen to auth state changes
-    _auth.authStateChanges().listen((User? user) {
+  AuthProvider(this._repository) {
+    _authSubscription = _repository.authStateChanges.listen((user) {
       _user = user;
       notifyListeners();
     });
   }
 
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  final AuthRepository _repository;
+  StreamSubscription<User?>? _authSubscription;
+
+  AsyncValue<void> _state = const AsyncIdle();
+  bool _isDemoMode = false;
+  User? _user;
+
+  AsyncValue<void> get state => _state;
+  bool get isLoading => _state is AsyncLoading<void>;
+  String? get error => switch (_state) {
+        AsyncError(:final error) => error.toString(),
+        _ => null,
+      };
   bool get isAuthenticated => _user != null || _isDemoMode;
   bool get isDemoMode => _isDemoMode;
   String? get userId => _user?.uid ?? (_isDemoMode ? 'demo_user' : null);
@@ -29,72 +35,72 @@ class AuthProvider with ChangeNotifier {
     if (_user == null) return null;
     return _user!.displayName ?? _user!.email?.split('@').first;
   }
+
   String? get userEmail => _user?.email;
 
-  Future<bool> signUp(String email, String password, String name, String surname) async {
-    _isLoading = true;
-    _error = null;
+  Future<bool> signUp(
+    String email,
+    String password,
+    String name,
+    String surname,
+  ) async {
+    _state = const AsyncLoading();
     notifyListeners();
 
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
+      final credential = await _repository.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
 
       if (credential.user != null) {
-        // Update display name
-        await credential.user!.updateDisplayName('$name $surname');
-        
-        // Save user profile to Firestore
-        await _firestore.collection('users').doc(credential.user!.uid).set({
-          'name': name,
-          'surname': surname,
-          'email': email.trim(),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        await _repository.updateDisplayName(
+          credential.user!,
+          '$name $surname',
+        );
+        await _repository.saveUserProfile(
+          uid: credential.user!.uid,
+          name: name,
+          surname: surname,
+          email: email.trim(),
+        );
       }
 
       _user = credential.user;
-      _isLoading = false;
+      _state = const AsyncData(null);
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      _error = _getErrorMessage(e.code);
-      _isLoading = false;
+      _state = AsyncError<void>(_getErrorMessage(e.code));
       notifyListeners();
       return false;
     } catch (e) {
-      _error = 'An unexpected error occurred: $e';
-      _isLoading = false;
+      _state = AsyncError<void>('An unexpected error occurred: $e');
       notifyListeners();
       return false;
     }
   }
 
   Future<bool> signIn(String email, String password) async {
-    _isLoading = true;
-    _error = null;
+    _state = const AsyncLoading();
     notifyListeners();
 
     try {
-      final credential = await _auth.signInWithEmailAndPassword(
+      final credential = await _repository.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      
+
       _user = credential.user;
-      _isLoading = false;
+      _state = const AsyncData(null);
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      _error = _getErrorMessage(e.code);
-      _isLoading = false;
+      _state = AsyncError<void>(_getErrorMessage(e.code));
       notifyListeners();
       return false;
     } catch (e) {
-      _error = 'An unexpected error occurred: $e';
-      _isLoading = false;
+      _state = AsyncError<void>('An unexpected error occurred: $e');
       notifyListeners();
       return false;
     }
@@ -102,7 +108,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
+      await _repository.signOut();
     } catch (e) {
       debugPrint('Sign out error: $e');
     }
@@ -117,8 +123,10 @@ class AuthProvider with ChangeNotifier {
   }
 
   void clearError() {
-    _error = null;
-    notifyListeners();
+    if (_state is AsyncError<void>) {
+      _state = const AsyncIdle();
+      notifyListeners();
+    }
   }
 
   String _getErrorMessage(String code) {
@@ -142,5 +150,11 @@ class AuthProvider with ChangeNotifier {
       default:
         return 'Authentication error: $code';
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }

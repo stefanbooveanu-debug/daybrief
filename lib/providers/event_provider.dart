@@ -1,86 +1,120 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../services/database_service.dart';
+
 import '../models/event.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/event_repository.dart';
+import '../utils/async_value.dart';
 
 class EventProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  List<Event> _events = [];
-  bool _isLoading = false;
-  String? _error;
-  StreamSubscription? _firestoreSubscription;
-
-  List<Event> get events => _events;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-
-  EventProvider() {
-    _init();
+  EventProvider({
+    required AuthRepository authRepository,
+    required EventRepository eventRepository,
+  })  : _authRepository = authRepository,
+        _eventRepository = eventRepository {
+    unawaited(_bootstrap());
   }
 
-  void _init() {
-    // Listen to auth changes to sync with Firestore when user logs in
-    FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user != null) {
-        _listenToFirestoreEvents(user.uid);
-      } else {
-        _firestoreSubscription?.cancel();
-        _loadLocalEvents();
-      }
-    });
-    _loadLocalEvents();
+  final AuthRepository _authRepository;
+  final EventRepository _eventRepository;
+
+  List<Event> _events = [];
+  AsyncValue<List<Event>> _state = const AsyncLoading();
+  StreamSubscription<List<Event>>? _firestoreSubscription;
+  String? _activeUserId;
+  bool _activeDemoMode = false;
+
+  List<Event> get events => List.unmodifiable(_events);
+  AsyncValue<List<Event>> get state => _state;
+  bool get isLoading => _state is AsyncLoading<List<Event>>;
+  String? get error => switch (_state) {
+        AsyncError(:final error) => error.toString(),
+        _ => null,
+      };
+
+  Future<void> _bootstrap() async {
+    await syncWithAuth(
+      userId: _resolveUserId(),
+      isAuthenticated: _authRepository.currentUser != null,
+      isDemoMode: false,
+    );
+  }
+
+  String? _resolveUserId() => _authRepository.currentUser?.uid;
+
+  Future<void> syncWithAuth({
+    required String? userId,
+    required bool isAuthenticated,
+    required bool isDemoMode,
+  }) async {
+    if (userId == _activeUserId &&
+        isDemoMode == _activeDemoMode &&
+        _firestoreSubscription != null &&
+        userId != null) {
+      return;
+    }
+
+    _activeUserId = userId;
+    _activeDemoMode = isDemoMode;
+
+    await _firestoreSubscription?.cancel();
+    _firestoreSubscription = null;
+
+    if (userId != null && !isDemoMode) {
+      _listenToFirestoreEvents(userId);
+      return;
+    }
+
+    _events = [];
+    notifyListeners();
+    await _loadLocalEvents();
   }
 
   Future<void> _loadLocalEvents() async {
-    _isLoading = true;
+    _state = const AsyncLoading();
     notifyListeners();
 
     try {
-      _events = await _databaseService.getAllEvents();
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
+      _events = await _eventRepository.getLocalEvents();
+      _state = AsyncData(List.unmodifiable(_events));
+    } catch (e, st) {
+      _state = AsyncError<List<Event>>(e, st);
     }
 
-    _isLoading = false;
     notifyListeners();
   }
 
   void _listenToFirestoreEvents(String userId) {
-    _firestoreSubscription?.cancel();
+    _state = const AsyncLoading();
+    notifyListeners();
 
-    _firestoreSubscription = _firestore
-        .collection('events')
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .listen((snapshot) {
-      _events = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id; // use firestore doc id
-        return Event.fromMap(data);
-      }).toList();
-      _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-      _isLoading = false;
-      notifyListeners();
-    }, onError: (error) {
-      debugPrint('Firestore listen error: $error');
-      _error = error.toString();
-      notifyListeners();
-    });
+    _firestoreSubscription =
+        _eventRepository.watchFirestoreEvents(userId).listen(
+      (events) {
+        _events = events;
+        _state = AsyncData(List.unmodifiable(_events));
+        notifyListeners();
+      },
+      onError: (Object error, StackTrace st) {
+        debugPrint('Firestore listen error: $error');
+        _state = AsyncError<List<Event>>(error, st);
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> refreshEvents() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      // Firestore updates automatically via stream
+    if (_activeUserId != null && !_activeDemoMode) {
       return;
     }
     await _loadLocalEvents();
+  }
+
+  String? get _persistUserId {
+    if (_activeDemoMode) return 'demo_user';
+    return _activeUserId;
   }
 
   List<Event> getEventsForDay(DateTime day) {
@@ -100,23 +134,19 @@ class EventProvider with ChangeNotifier {
 
   Future<void> addEvent(Event event) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        // Save to Firestore
-        final eventData = event.toMap();
-        eventData['userId'] = user.uid;
-        await _firestore.collection('events').doc(event.id).set(eventData);
-        // Firestore stream will update _events automatically
-      } else {
-        // Save locally
-        await _databaseService.insertEvent(event);
-        _events.add(event);
-        _events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-        notifyListeners();
+      final userId = _persistUserId;
+      if (userId != null && !_activeDemoMode) {
+        await _eventRepository.addEvent(event, userId: userId);
+        return;
       }
-    } catch (e) {
-      _error = e.toString();
+
+      await _eventRepository.addEvent(event, userId: null);
+      _events = [..._events, event]
+        ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      _state = AsyncData(List.unmodifiable(_events));
+      notifyListeners();
+    } catch (e, st) {
+      _state = AsyncError<List<Event>>(e, st);
       debugPrint('Add event error: $e');
       notifyListeners();
     }
@@ -124,37 +154,39 @@ class EventProvider with ChangeNotifier {
 
   Future<void> updateEvent(Event event) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final userId = _persistUserId;
+      if (userId != null && !_activeDemoMode) {
+        await _eventRepository.updateEvent(event, userId: userId);
+        return;
+      }
 
-      if (user != null) {
-        final eventData = event.toMap();
-        eventData['userId'] = user.uid;
-        await _firestore.collection('events').doc(event.id).update(eventData);
-      } else {
-        await _databaseService.updateEvent(event);
-        final idx = _events.indexWhere((e) => e.id == event.id);
-        if (idx >= 0) _events[idx] = event;
+      await _eventRepository.updateEvent(event, userId: null);
+      final idx = _events.indexWhere((e) => e.id == event.id);
+      if (idx >= 0) {
+        _events = [..._events]..[idx] = event;
+        _state = AsyncData(List.unmodifiable(_events));
         notifyListeners();
       }
-    } catch (e) {
-      _error = e.toString();
+    } catch (e, st) {
+      _state = AsyncError<List<Event>>(e, st);
       notifyListeners();
     }
   }
 
   Future<void> deleteEvent(String eventId) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        await _firestore.collection('events').doc(eventId).delete();
-      } else {
-        await _databaseService.deleteEvent(eventId);
-        _events.removeWhere((e) => e.id == eventId);
-        notifyListeners();
+      final userId = _persistUserId;
+      if (userId != null && !_activeDemoMode) {
+        await _eventRepository.deleteEvent(eventId, userId: userId);
+        return;
       }
-    } catch (e) {
-      _error = e.toString();
+
+      await _eventRepository.deleteEvent(eventId, userId: null);
+      _events = _events.where((e) => e.id != eventId).toList();
+      _state = AsyncData(List.unmodifiable(_events));
+      notifyListeners();
+    } catch (e, st) {
+      _state = AsyncError<List<Event>>(e, st);
       notifyListeners();
     }
   }

@@ -1,41 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+
+import '../app/app_scope.dart';
 import '../models/event.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
 import '../services/claude_service.dart';
+import '../utils/async_value.dart';
 import '../widgets/add_event_sheet.dart';
 import '../widgets/event_card.dart';
 import '../widgets/voice_assistant_button.dart';
 import '../widgets/animated_theme.dart';
-import 'settings_screen.dart';
-import 'search_screen.dart';
-import 'time_report_screen.dart';
-import 'month_view_screen.dart';
-import 'week_view_screen.dart';
-import 'driving_mode_screen.dart';
-import 'family_calendar_screen.dart';
+import 'package:intl/intl.dart';
 
-class HomeScreen extends StatefulWidget {
-  final Map<EventCategory, Color>? categoryColors;
-  final Function(Map<EventCategory, Color>)? onCategoryColorsChanged;
-  final Function(bool)? onThemeChanged;
+class HomeShell extends StatefulWidget {
+  const HomeShell({required this.child, super.key});
 
-  const HomeScreen({
-    super.key,
-    this.categoryColors,
-    this.onCategoryColorsChanged,
-    this.onThemeChanged,
-  });
+  final Widget child;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
   DateTime _selectedDay = DateTime.now();
-  int _currentView = 0;
 
   late AnimationController _fabController;
   late Animation<double> _fabAnim;
@@ -43,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _headerFade;
 
   final List<String> _viewLabels = ['Day', 'Week', 'Month'];
+  static const _viewPaths = ['/home', '/week', '/month'];
 
   @override
   void initState() {
@@ -87,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _openAddEvent() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -97,16 +87,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _toggleTheme() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    widget.onThemeChanged?.call(!isDark);
+    AppScope.of(context).onThemeChanged(!isDark);
   }
 
   Future<void> _showAISummary() async {
     final events = context.read<EventProvider>().getEventsForDay(_selectedDay);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showDialog(
+    await showDialog<void>(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: isDark ? const Color(0xFF2A1A0A) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
@@ -172,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(dialogContext),
                   child: const Text(
                     'Close',
                     style: TextStyle(
@@ -187,15 +177,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _navigateToView(int view) {
-    if (view == 1) {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (_) => const WeekViewScreen()));
-    } else if (view == 2) {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (_) => const MonthViewScreen()));
-    }
-    setState(() => _currentView = view);
+  int _currentViewIndex(BuildContext context) {
+    final location = GoRouterState.of(context).uri.path;
+    final index = _viewPaths.indexOf(location);
+    return index >= 0 ? index : 0;
   }
 
   @override
@@ -205,6 +190,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final cardColor = isDark ? const Color(0xFF2A1A0A) : Colors.white;
     final textColor =
         isDark ? const Color(0xFFFFF5EC) : const Color(0xFF1A0A00);
+    final viewIndex = _currentViewIndex(context);
+    final scope = AppScope.of(context);
 
     return SmoothThemeTransition(
       isDark: isDark,
@@ -217,20 +204,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 opacity: _headerFade,
                 child: _buildHeader(isDark, textColor, cardColor),
               ),
-              _buildViewSelector(isDark, textColor),
-              _buildDateNavigator(isDark, textColor),
-              Expanded(
-                child: _buildEventsList(isDark, textColor, cardColor),
-              ),
+              _buildViewSelector(isDark, textColor, viewIndex),
+              if (viewIndex == 0) _buildDateNavigator(isDark, textColor),
+              if (viewIndex == 0)
+                Expanded(
+                  child: DayViewBody(
+                    selectedDay: _selectedDay,
+                    isDark: isDark,
+                    textColor: textColor,
+                    categoryColors: scope.categoryColors,
+                  ),
+                )
+              else
+                Expanded(child: widget.child),
             ],
           ),
         ),
-        floatingActionButton: ScaleTransition(
-          scale: _fabAnim,
-          child: _buildFAB(),
-        ),
+        floatingActionButton: viewIndex == 0
+            ? ScaleTransition(scale: _fabAnim, child: _buildFAB())
+            : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: _buildBottomBar(isDark, cardColor),
+        bottomNavigationBar: _buildBottomBar(isDark, cardColor, viewIndex),
       ),
     );
   }
@@ -285,16 +279,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
           _buildHeaderButton(
             icon: Icons.directions_car_rounded,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const DrivingModeScreen())),
+            onTap: () => context.push('/driving'),
             isDark: isDark,
             color: const Color(0xFFFF8C69),
           ),
           const SizedBox(width: 8),
           _buildHeaderButton(
             icon: Icons.search_rounded,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SearchScreen())),
+            onTap: () => context.push('/search'),
             isDark: isDark,
           ),
           const SizedBox(width: 8),
@@ -306,26 +298,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(width: 8),
           _buildHeaderButton(
             icon: Icons.settings_rounded,
-            onTap: () async {
-              final result = await Navigator.push<Map<String, dynamic>>(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => SettingsScreen(
-                            categoryColors: widget.categoryColors ?? {},
-                            onThemeChanged: widget.onThemeChanged,
-                            onColorsChanged: widget.onCategoryColorsChanged,
-                          )));
-              if (result != null && mounted) {
-                // Update colors if changed
-                if (result['categoryColors'] != null) {
-                  final newColors = Map<EventCategory, Color>.from(
-                    result['categoryColors'] as Map<EventCategory, Color>,
-                  );
-                  widget.onCategoryColorsChanged?.call(newColors);
-                }
-                // Theme change is handled via callback in main.dart
-              }
-            },
+            onTap: () => context.push('/settings'),
             isDark: isDark,
           ),
         ],
@@ -364,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildViewSelector(bool isDark, Color textColor) {
+  Widget _buildViewSelector(bool isDark, Color textColor, int selectedIndex) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Container(
@@ -382,10 +355,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         child: Row(
           children: List.generate(_viewLabels.length, (index) {
-            final isSelected = _currentView == index;
+            final isSelected = selectedIndex == index;
             return Expanded(
               child: GestureDetector(
-                onTap: () => _navigateToView(index),
+                onTap: () => context.go(_viewPaths[index]),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   padding: const EdgeInsets.symmetric(vertical: 10),
@@ -397,7 +370,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFFF8C69).withValues(alpha: 0.3),
+                              color: const Color(0xFFFF8C69)
+                                  .withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -496,79 +470,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEventsList(bool isDark, Color textColor, Color cardColor) {
-    return Consumer<EventProvider>(
-      builder: (context, eventProvider, _) {
-        final events = eventProvider.getEventsForDay(_selectedDay);
-
-        if (eventProvider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xFFFF8C69)),
-          );
-        }
-
-        if (events.isEmpty) {
-          return _buildEmptyState(isDark, textColor);
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: events.length,
-          cacheExtent: 200,
-          itemBuilder: (context, index) {
-            return EventCard(
-              event: events[index],
-              isDark: isDark,
-              categoryColors: widget.categoryColors ?? {},
-              onDelete: () =>
-                  context.read<EventProvider>().deleteEvent(events[index].id),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState(bool isDark, Color textColor) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFB347).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.event_available_rounded,
-              size: 40,
-              color: Color(0xFFFFB347),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Niciun eveniment',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Apasă + pentru a adăuga ceva',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[400],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFAB() {
     return Container(
       width: 60,
@@ -596,7 +497,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBottomBar(bool isDark, Color cardColor) {
+  Widget _buildBottomBar(bool isDark, Color cardColor, int viewIndex) {
     return Container(
       height: 80,
       decoration: BoxDecoration(
@@ -615,27 +516,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildNavItem(
             icon: Icons.calendar_today_rounded,
             label: 'Calendar',
-            onTap: () {},
-            isActive: true,
+            onTap: () => context.go('/home'),
+            isActive: viewIndex >= 0 && viewIndex <= 2,
             isDark: isDark,
           ),
           _buildNavItem(
             icon: Icons.people_alt_rounded,
             label: 'Familie',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FamilyCalendarScreen()),
-            ),
+            onTap: () => context.push('/family'),
             isDark: isDark,
           ),
           const SizedBox(width: 60),
           _buildNavItem(
             icon: Icons.bar_chart_rounded,
             label: 'Rapoarte',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TimeReportScreen()),
-            ),
+            onTap: () => context.push('/time-report'),
             isDark: isDark,
           ),
           const VoiceAssistantButton(),
@@ -668,6 +563,103 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               fontSize: 10,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               color: isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DayViewBody extends StatelessWidget {
+  const DayViewBody({
+    required this.selectedDay,
+    required this.isDark,
+    required this.textColor,
+    required this.categoryColors,
+    super.key,
+  });
+
+  final DateTime selectedDay;
+  final bool isDark;
+  final Color textColor;
+  final Map<EventCategory, Color> categoryColors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<EventProvider>(
+      builder: (context, eventProvider, _) {
+        final events = eventProvider.getEventsForDay(selectedDay);
+
+        return switch (eventProvider.state) {
+          AsyncLoading() => const Center(
+              child: CircularProgressIndicator(color: Color(0xFFFF8C69)),
+            ),
+          AsyncError(:final error) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  error.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red[300]),
+                ),
+              ),
+            ),
+          AsyncIdle() || AsyncData() => events.isEmpty
+              ? _buildEmptyState(textColor)
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                  itemCount: events.length,
+                  cacheExtent: 200,
+                  itemBuilder: (context, index) {
+                    return EventCard(
+                      event: events[index],
+                      isDark: isDark,
+                      categoryColors: categoryColors,
+                      onDelete: () => context
+                          .read<EventProvider>()
+                          .deleteEvent(events[index].id),
+                    );
+                  },
+                ),
+        };
+      },
+    );
+  }
+
+  Widget _buildEmptyState(Color textColor) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFB347).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.event_available_rounded,
+              size: 40,
+              color: Color(0xFFFFB347),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Niciun eveniment',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Apasă + pentru a adăuga ceva',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[400],
             ),
           ),
         ],

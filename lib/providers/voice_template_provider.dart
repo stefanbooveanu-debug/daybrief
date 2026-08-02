@@ -1,71 +1,62 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/voice_template.dart';
+import '../repositories/voice_template_repository.dart';
+import '../utils/async_value.dart';
 
 class VoiceTemplateProvider with ChangeNotifier {
-  List<VoiceTemplate> _templates = [];
-  bool _isLoading = false;
-
-  List<VoiceTemplate> get templates => _templates;
-  List<VoiceTemplate> get customTemplates => _templates.where((t) => t.isCustom).toList();
-  bool get isLoading => _isLoading;
-
-  VoiceTemplateProvider() {
+  VoiceTemplateProvider(this._repository) {
     _loadTemplates();
   }
 
+  final VoiceTemplateRepository _repository;
+
+  List<VoiceTemplate> _templates = [];
+  AsyncValue<List<VoiceTemplate>> _state = const AsyncLoading();
+
+  List<VoiceTemplate> get templates => List.unmodifiable(_templates);
+  List<VoiceTemplate> get customTemplates =>
+      List.unmodifiable(_templates.where((t) => t.isCustom));
+  AsyncValue<List<VoiceTemplate>> get state => _state;
+  bool get isLoading => _state is AsyncLoading<List<VoiceTemplate>>;
+
   Future<void> _loadTemplates() async {
-    _isLoading = true;
+    _state = const AsyncLoading();
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedTemplates = prefs.getString('voiceTemplates');
-      
-      if (savedTemplates != null) {
-        final List<dynamic> decoded = jsonDecode(savedTemplates);
-        _templates = decoded.map((e) => VoiceTemplate.fromMap(e)).toList();
-      } else {
-        _templates = VoiceTemplate.defaultTemplates;
-      }
-    } catch (e) {
+      _templates = await _repository.loadTemplates();
+      _state = AsyncData(List.unmodifiable(_templates));
+    } catch (e, st) {
       _templates = VoiceTemplate.defaultTemplates;
+      _state = AsyncError<List<VoiceTemplate>>(e, st);
     }
 
-    _isLoading = false;
     notifyListeners();
-  }
-
-  Future<void> _saveTemplates() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final encoded = jsonEncode(_templates.map((e) => e.toMap()).toList());
-      await prefs.setString('voiceTemplates', encoded);
-    } catch (e) {
-      debugPrint('Error saving templates: $e');
-    }
   }
 
   Future<void> addTemplate(VoiceTemplate template) async {
     final newTemplate = template.copyWith(isCustom: true);
-    _templates.add(newTemplate);
-    await _saveTemplates();
+    _templates = [..._templates, newTemplate];
+    await _repository.saveTemplates(_templates);
+    _state = AsyncData(List.unmodifiable(_templates));
     notifyListeners();
   }
 
   Future<void> updateTemplate(VoiceTemplate template) async {
     final index = _templates.indexWhere((t) => t.id == template.id);
     if (index != -1) {
-      _templates[index] = template;
-      await _saveTemplates();
+      _templates = [..._templates]..[index] = template;
+      await _repository.saveTemplates(_templates);
+      _state = AsyncData(List.unmodifiable(_templates));
       notifyListeners();
     }
   }
 
   Future<void> deleteTemplate(String id) async {
-    _templates.removeWhere((t) => t.id == id);
-    await _saveTemplates();
+    _templates = _templates.where((t) => t.id != id).toList();
+    await _repository.saveTemplates(_templates);
+    _state = AsyncData(List.unmodifiable(_templates));
     notifyListeners();
   }
 
@@ -81,7 +72,8 @@ class VoiceTemplateProvider with ChangeNotifier {
 
   Future<void> resetToDefaults() async {
     _templates = VoiceTemplate.defaultTemplates;
-    await _saveTemplates();
+    await _repository.saveTemplates(_templates);
+    _state = AsyncData(List.unmodifiable(_templates));
     notifyListeners();
   }
 }

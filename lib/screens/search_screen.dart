@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/event_provider.dart';
@@ -20,7 +21,13 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _showResults = false;
   List<Event> _allEvents = [];
 
-  final List<String> _filters = ['All', 'Today', 'This Week', 'This Month', 'Upcoming'];
+  final List<String> _filters = [
+    'All',
+    'Today',
+    'This Week',
+    'This Month',
+    'Upcoming'
+  ];
 
   @override
   void initState() {
@@ -55,59 +62,69 @@ class _SearchScreenState extends State<SearchScreen> {
 
     setState(() {
       _filteredEvents = _allEvents.where((event) {
-        final matchesQuery = query.isEmpty || 
+        final matchesQuery = query.isEmpty ||
             event.title.toLowerCase().contains(query) ||
             (event.description?.toLowerCase().contains(query) ?? false);
-        
+
         bool matchesFilter = true;
         switch (_selectedFilter) {
           case 'Today':
             matchesFilter = _isSameDay(event.dateTime, now);
             break;
           case 'This Week':
-            matchesFilter = event.dateTime.isAfter(startOfWeek) && event.dateTime.isBefore(endOfWeek);
+            matchesFilter = event.dateTime.isAfter(startOfWeek) &&
+                event.dateTime.isBefore(endOfWeek);
             break;
           case 'This Month':
-            matchesFilter = event.dateTime.isAfter(startOfMonth) && event.dateTime.isBefore(endOfMonth.add(const Duration(days: 1)));
+            matchesFilter = event.dateTime.isAfter(startOfMonth) &&
+                event.dateTime
+                    .isBefore(endOfMonth.add(const Duration(days: 1)));
             break;
           case 'Upcoming':
             matchesFilter = event.dateTime.isAfter(now);
             break;
         }
-        
+
         return matchesQuery && matchesFilter;
       }).toList();
-      
-      _showResults = _searchController.text.isNotEmpty || _selectedFilter != 'All';
+
+      _showResults =
+          _searchController.text.isNotEmpty || _selectedFilter != 'All';
     });
   }
 
-  bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF5F6368)),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? Colors.white : const Color(0xFF5F6368)),
+          onPressed: () => context.pop(),
         ),
         title: TextField(
           controller: _searchController,
           autofocus: true,
-          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
+          style:
+              TextStyle(color: isDark ? Colors.white : const Color(0xFF202124)),
           decoration: InputDecoration(
             hintText: 'Search events...',
-            hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[400]),
+            hintStyle:
+                TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[400]),
             border: InputBorder.none,
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    icon: Icon(Icons.clear,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600]),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _showResults = false);
@@ -134,13 +151,17 @@ class _SearchScreenState extends State<SearchScreen> {
                     label: Text(filter),
                     selected: isSelected,
                     onSelected: (selected) {
-                      setState(() => _selectedFilter = selected ? filter : 'All');
+                      setState(
+                          () => _selectedFilter = selected ? filter : 'All');
                       _filterEvents();
                     },
-                    backgroundColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
-                    selectedColor: isDark ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8),
+                    backgroundColor:
+                        isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                    selectedColor: isDark
+                        ? const Color(0xFF8AB4F8)
+                        : const Color(0xFF1A73E8),
                     labelStyle: TextStyle(
-                      color: isSelected 
+                      color: isSelected
                           ? (isDark ? Colors.black : Colors.white)
                           : (isDark ? Colors.white70 : const Color(0xFF5F6368)),
                     ),
@@ -157,9 +178,17 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off, size: 64, color: isDark ? Colors.grey[700] : Colors.grey[300]),
+                          Icon(Icons.search_off,
+                              size: 64,
+                              color:
+                                  isDark ? Colors.grey[700] : Colors.grey[300]),
                           const SizedBox(height: 16),
-                          Text('No events found', style: TextStyle(fontSize: 18, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                          Text('No events found',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600])),
                         ],
                       ),
                     )
@@ -173,7 +202,11 @@ class _SearchScreenState extends State<SearchScreen> {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Text(
                               '${_filteredEvents.length} result${_filteredEvents.length > 1 ? 's' : ''} found',
-                              style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600]),
                             ),
                           );
                         }
@@ -190,33 +223,59 @@ class _SearchScreenState extends State<SearchScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.05),
+                                        blurRadius: 10)
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 48, height: 48,
+                                      width: 48,
+                                      height: 48,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1A73E8).withValues(alpha: 0.1),
+                                        color: const Color(0xFF1A73E8)
+                                            .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(Icons.event, color: Color(0xFF1A73E8)),
+                                      child: const Icon(Icons.event,
+                                          color: Color(0xFF1A73E8)),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Text(event.title, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF202124))),
+                                          Text(event.title,
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : const Color(
+                                                          0xFF202124))),
                                           const SizedBox(height: 4),
-                                          Text(DateFormat('EEE, MMM d • h:mm a').format(event.dateTime),
-                                            style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                                          Text(
+                                              DateFormat('EEE, MMM d • h:mm a')
+                                                  .format(event.dateTime),
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: isDark
+                                                      ? Colors.grey[400]
+                                                      : Colors.grey[600])),
                                         ],
                                       ),
                                     ),
-                                    Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                                    Icon(Icons.chevron_right,
+                                        color: isDark
+                                            ? Colors.grey[600]
+                                            : Colors.grey[400]),
                                   ],
                                 ),
                               ),
@@ -232,11 +291,21 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search, size: 80, color: isDark ? Colors.grey[700] : Colors.grey[300]),
+                    Icon(Icons.search,
+                        size: 80,
+                        color: isDark ? Colors.grey[700] : Colors.grey[300]),
                     const SizedBox(height: 16),
-                    Text('Search for events', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                    Text('Search for events',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                isDark ? Colors.grey[400] : Colors.grey[600])),
                     const SizedBox(height: 8),
-                    Text('Type to search or use filters', style: TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[500])),
+                    Text('Type to search or use filters',
+                        style: TextStyle(
+                            color:
+                                isDark ? Colors.grey[600] : Colors.grey[500])),
                   ],
                 ),
               ),

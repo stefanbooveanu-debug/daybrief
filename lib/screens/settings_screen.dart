@@ -1,23 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../app/app_scope.dart';
 import '../models/event.dart';
 import '../theme/app_theme.dart';
-import 'driving_mode_screen.dart';
-import 'family_calendar_screen.dart';
-import 'quick_poll_screen.dart';
-import 'share_calendar_screen.dart';
-import 'time_report_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final Function(bool)? onThemeChanged;
-  final Function(Map<EventCategory, Color>)? onColorsChanged;
-  final Map<EventCategory, Color>? categoryColors;
-
-  const SettingsScreen({
-    super.key,
-    this.onThemeChanged,
-    this.onColorsChanged,
-    this.categoryColors,
-  });
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -44,20 +32,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _categoryColors = Map<EventCategory, Color>.from(
       AppColors.defaultCategoryColors,
     );
-    if (widget.categoryColors != null) {
-      _categoryColors.addAll(widget.categoryColors!);
-    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    if (!_categoryColorsHydrated && _categoryColors.isEmpty) {
-      final fromTheme = Theme.of(context).extension<CategoryColors>();
-      _categoryColors = Map<EventCategory, Color>.from(
-        fromTheme?.values ?? AppColors.defaultCategoryColors,
-      );
+    if (!_categoryColorsHydrated) {
+      final fromScope = AppScope.of(context).categoryColors;
+      _categoryColors = Map<EventCategory, Color>.from(fromScope);
       _categoryColorsHydrated = true;
     }
   }
@@ -75,13 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back,
               color: isDark ? Colors.white : const Color(0xFF5F6368)),
-          onPressed: () {
-            // Return the current values to parent
-            Navigator.pop(context, {
-              'isDarkMode': _isDarkMode,
-              'categoryColors': _categoryColors,
-            });
-          },
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Settings',
@@ -103,11 +80,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icons.dark_mode_outlined,
                 _isDarkMode,
                 (value) {
-                  // Update switch state immediately for smooth animation
+                  final scope = AppScope.of(context);
                   setState(() => _isDarkMode = value);
-                  // Delay theme change so switch animation completes first
                   Future.delayed(const Duration(milliseconds: 250), () {
-                    widget.onThemeChanged?.call(value);
+                    scope.onThemeChanged(value);
                   });
                 },
                 isDark: isDark,
@@ -165,11 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             [
               _buildNavTile('Time Report', 'Weekly time analysis',
                   Icons.pie_chart_outline, () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const TimeReportScreen()));
+                context.push('/time-report');
               }, isDark),
               _buildSwitchTile(
                 'Smart Shortcuts',
@@ -188,37 +160,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             [
               _buildNavTile('Share Calendar', 'Let others view your schedule',
                   Icons.share_outlined, () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            const ShareCalendarScreen(events: [])));
+                context.push('/share');
               }, isDark),
               _buildNavTile('Quick Poll', 'Find the best meeting time',
                   Icons.how_to_vote_outlined, () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const QuickPollScreen()));
+                context.push('/poll');
               }, isDark),
               _buildNavTile('Family Calendar', 'Shared family events',
                   Icons.family_restroom_outlined, () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            FamilyCalendarScreen(onAddEvent: (e) {})));
+                context.push('/family');
               }, isDark),
               _buildNavTile('Driving Mode', 'Voice-only safe mode',
                   Icons.directions_car_outlined, () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const DrivingModeScreen()));
+                context.push('/driving');
               }, isDark),
             ],
             isDark: isDark,
@@ -566,7 +520,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 border: c == selectedColor
                                     ? Border.all(color: Colors.white, width: 3)
                                     : Border.all(
-                                        color: Colors.grey.withValues(alpha: 0.3)),
+                                        color:
+                                            Colors.grey.withValues(alpha: 0.3)),
                                 boxShadow: c == selectedColor
                                     ? [
                                         BoxShadow(
@@ -628,7 +583,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               FilledButton(
                 onPressed: () {
                   setState(() => _categoryColors[category] = selectedColor);
-                  widget.onColorsChanged?.call(Map.from(_categoryColors));
+                  AppScope.of(context)
+                      .onCategoryColorsChanged(Map.from(_categoryColors));
                   Navigator.pop(dialogContext);
                 },
                 style: FilledButton.styleFrom(

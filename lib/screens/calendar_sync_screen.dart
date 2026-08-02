@@ -1,18 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../models/event.dart';
+import '../providers/event_provider.dart';
 import '../services/google_calendar_service.dart';
 
 class CalendarSyncScreen extends StatefulWidget {
-  final List<Event> events;
-  final Function(List<Event>) onEventsImported;
-
-  const CalendarSyncScreen({
-    super.key,
-    required this.events,
-    required this.onEventsImported,
-  });
+  const CalendarSyncScreen({super.key});
 
   @override
   State<CalendarSyncScreen> createState() => _CalendarSyncScreenState();
@@ -36,7 +31,7 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back,
               color: isDark ? Colors.white : const Color(0xFF5F6368)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Calendar Sync',
@@ -220,7 +215,8 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final icsContent = _calendarService.generateIcsFile(widget.events);
+      final events = context.read<EventProvider>().events;
+      final icsContent = _calendarService.generateIcsFile(events);
 
       final result = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Calendar',
@@ -272,26 +268,28 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
 
         final importedEvents = _calendarService.parseIcsEvents(content);
 
-        if (importedEvents.isNotEmpty) {
-          widget.onEventsImported(importedEvents);
+        if (!mounted) return;
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Imported ${importedEvents.length} events!'),
-                backgroundColor: Colors.green,
-              ),
-            );
+        if (importedEvents.isNotEmpty) {
+          final eventProvider = context.read<EventProvider>();
+          for (final event in importedEvents) {
+            await eventProvider.addEvent(event);
           }
+
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Imported ${importedEvents.length} events!'),
+              backgroundColor: Colors.green,
+            ),
+          );
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No events found in file'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No events found in file'),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       }
     } catch (e) {
@@ -324,7 +322,8 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
         setState(() => _statusMessage = 'Connected! Syncing events...');
 
         int syncedCount = 0;
-        for (final event in widget.events) {
+        final events = context.read<EventProvider>().events;
+        for (final event in events) {
           final success = await _calendarService.syncEvent(event);
           if (success) syncedCount++;
         }

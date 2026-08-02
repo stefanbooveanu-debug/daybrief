@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/voice_provider.dart';
 import '../providers/event_provider.dart';
@@ -14,17 +15,17 @@ class DrivingModeScreen extends StatefulWidget {
 
 class _DrivingModeScreenState extends State<DrivingModeScreen>
     with TickerProviderStateMixin {
-  bool _isListening = false;    // microfonul e activ
+  bool _isListening = false; // microfonul e activ
   String _statusText = 'Apasă pentru a vorbi'; // textul de status
-  String _lastCommand = '';                    // ultimul command recunoscut
-  List<Event> _todayEvents = [];               // evenimentele de azi
+  String _lastCommand = ''; // ultimul command recunoscut
+  List<Event> _todayEvents = []; // evenimentele de azi
 
-  late AnimationController _pulseController;  // controller puls microfon
-  late AnimationController _waveController;   // controller animatie unde
-  late Animation<double> _pulse;              // animatie scala puls
-  late Animation<double> _wave1;              // unda 1
-  late Animation<double> _wave2;              // unda 2
-  late Animation<double> _wave3;              // unda 3
+  late AnimationController _pulseController; // controller puls microfon
+  late AnimationController _waveController; // controller animatie unde
+  late Animation<double> _pulse; // animatie scala puls
+  late Animation<double> _wave1; // unda 1
+  late Animation<double> _wave2; // unda 2
+  late Animation<double> _wave3; // unda 3
 
   @override
   void initState() {
@@ -95,11 +96,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     final voiceProvider = context.read<VoiceProvider>();
     voiceProvider.startListening(onResult: (command) {
       setState(() {
-        _lastCommand = command;          // salvam comanda recunoscuta
+        _lastCommand = command; // salvam comanda recunoscuta
         _isListening = false;
-        _statusText = 'Înțeles!';        // confirmare
+        _statusText = 'Înțeles!'; // confirmare
       });
-      _processVoiceCommand(command);    // procesam comanda
+      _processVoiceCommand(command); // procesam comanda
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _statusText = 'Apasă pentru a vorbi');
       });
@@ -120,7 +121,8 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     } else if (lower.contains('urmatorul') || lower.contains('următor')) {
       _speakNextEvent(); // citim urmatorul eveniment
     } else if (lower.contains('adaugă') || lower.contains('adauga')) {
-      setState(() => _statusText = 'Nu poți adăuga în modul șofat'); // restrictie
+      setState(
+          () => _statusText = 'Nu poți adăuga în modul șofat'); // restrictie
       _speak('Nu poți adăuga evenimente în timp ce conduci');
     } else if (lower.contains('ora') || lower.contains('cât e')) {
       final now = DateFormat('HH:mm').format(DateTime.now());
@@ -171,24 +173,25 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0500), // fundal aproape negru (siguranta sofer)
+      backgroundColor:
+          const Color(0xFF0D0500), // fundal aproape negru (siguranta sofer)
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(),        // bara de sus cu titlu si iesire
+            _buildTopBar(), // bara de sus cu titlu si iesire
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildMicButton(),      // butonul mare de microfon
+                  _buildMicButton(), // butonul mare de microfon
                   const SizedBox(height: 40),
-                  _buildStatusText(),     // textul de status
+                  _buildStatusText(), // textul de status
                   if (_lastCommand.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    _buildLastCommand(),  // ultima comanda recunoscuta
+                    _buildLastCommand(), // ultima comanda recunoscuta
                   ],
                   const SizedBox(height: 60),
-                  _buildEventsPreview(),  // preview evenimente azi
+                  _buildEventsPreview(), // preview evenimente azi
                 ],
               ),
             ),
@@ -206,7 +209,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context), // iesim din driving mode
+            onTap: () => context.pop(),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -278,7 +281,8 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
               // unda 3 - cea mai exterioara
               if (_isListening)
                 Opacity(
-                  opacity: (1.0 - _wave3.value) * 0.15, // fade out pe masura ce se extinde
+                  opacity: (1.0 - _wave3.value) *
+                      0.15, // fade out pe masura ce se extinde
                   child: Container(
                     width: 240 + _wave3.value * 40,
                     height: 240 + _wave3.value * 40,
@@ -325,7 +329,8 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 ),
               // butonul principal de microfon
               ScaleTransition(
-                scale: _isListening ? _pulse : const AlwaysStoppedAnimation(1.0),
+                scale:
+                    _isListening ? _pulse : const AlwaysStoppedAnimation(1.0),
                 child: GestureDetector(
                   onTap: _toggleListening,
                   child: Container(
@@ -335,11 +340,13 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: _isListening
-                            ? [ // rosu cand asculta - atentie sofer
+                            ? [
+                                // rosu cand asculta - atentie sofer
                                 const Color(0xFFFF4444),
                                 const Color(0xFFCC2222),
                               ]
-                            : [ // portocaliu normal
+                            : [
+                                // portocaliu normal
                                 const Color(0xFFFFB347),
                                 const Color(0xFFFF6B35),
                               ],
@@ -357,8 +364,8 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                     ),
                     child: Icon(
                       _isListening
-                          ? Icons.stop_rounded    // stop cand asculta
-                          : Icons.mic_rounded,    // microfon normal
+                          ? Icons.stop_rounded // stop cand asculta
+                          : Icons.mic_rounded, // microfon normal
                       color: Colors.white,
                       size: 56,
                     ),
@@ -378,7 +385,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       _statusText,
       style: TextStyle(
         color: _isListening
-            ? const Color(0xFFFF8C69)  // portocaliu cand asculta
+            ? const Color(0xFFFF8C69) // portocaliu cand asculta
             : Colors.grey[500],
         fontSize: 18,
         fontWeight: FontWeight.w600,
@@ -425,8 +432,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.event_rounded,
-              color: Color(0xFFFF8C69), size: 20),
+          const Icon(Icons.event_rounded, color: Color(0xFFFF8C69), size: 20),
           const SizedBox(width: 10),
           Text(
             _todayEvents.isEmpty
@@ -469,11 +475,12 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             children: commands.map((cmd) {
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => _processVoiceCommand(cmd.$1), // procesam comanda direct
+                  onTap: () =>
+                      _processVoiceCommand(cmd.$1), // procesam comanda direct
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 8),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1A0E00),
                       borderRadius: BorderRadius.circular(14),
@@ -483,8 +490,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                     ),
                     child: Column(
                       children: [
-                        Icon(cmd.$2,
-                            color: const Color(0xFFFF8C69), size: 20),
+                        Icon(cmd.$2, color: const Color(0xFFFF8C69), size: 20),
                         const SizedBox(height: 6),
                         Text(
                           cmd.$1,

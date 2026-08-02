@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../models/event.dart';
@@ -39,7 +40,7 @@ class TimeReportScreen extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back,
               color: isDark ? Colors.white : const Color(0xFF5F6368)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Text('Time Report',
             style: TextStyle(
@@ -166,7 +167,8 @@ class TimeReportScreen extends StatelessWidget {
 
   Widget _buildDailyChart(List<Event> events, bool isDark) {
     final days = List.generate(7, (i) {
-      final d = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1 - i));
+      final d = DateTime.now()
+          .subtract(Duration(days: DateTime.now().weekday - 1 - i));
       return DateTime(d.year, d.month, d.day);
     });
     final counts = days.map((day) {
@@ -177,7 +179,8 @@ class TimeReportScreen extends StatelessWidget {
               e.dateTime.day == day.day)
           .length;
     }).toList();
-    final maxCount = counts.isEmpty ? 1 : counts.reduce((a, b) => a > b ? a : b);
+    final maxCount =
+        counts.isEmpty ? 1 : counts.reduce((a, b) => a > b ? a : b);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,

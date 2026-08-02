@@ -228,8 +228,7 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
                   value: defaultTime,
                   decoration: const InputDecoration(labelText: 'Default Time'),
                   items: [
-                    const DropdownMenuItem<String?>(
-                        child: Text('No default')),
+                    const DropdownMenuItem<String?>(child: Text('No default')),
                     ...[
                       '06:00',
                       '07:00',

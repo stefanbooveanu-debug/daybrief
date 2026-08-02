@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,16 +11,21 @@ import 'providers/auth_provider.dart';
 import 'providers/event_provider.dart';
 import 'providers/voice_provider.dart';
 import 'providers/voice_template_provider.dart';
-import 'screens/auth_screen.dart';
-import 'screens/home_screen.dart';
+import 'repositories/auth_repository.dart';
+import 'repositories/event_repository.dart';
+import 'repositories/family_repository.dart';
+import 'repositories/poll_repository.dart';
+import 'repositories/share_calendar_repository.dart';
+import 'repositories/voice_template_repository.dart';
+import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'models/event.dart';
 import 'utils/logger.dart';
+import 'app/app_scope.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -48,15 +56,40 @@ class _DayBriefAppState extends State<DayBriefApp> {
   Map<EventCategory, Color> _categoryColors =
       Map<EventCategory, Color>.from(AppColors.defaultCategoryColors);
 
+  late final AuthRepository _authRepository;
+  late final EventRepository _eventRepository;
+  late final VoiceTemplateRepository _voiceTemplateRepository;
+  late final FamilyRepository _familyRepository;
+  late final PollRepository _pollRepository;
+  late final ShareCalendarRepository _shareCalendarRepository;
+  late final AuthProvider _authProvider;
+  late final GoRouter _router;
+
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _authRepository = AuthRepository();
+    _eventRepository = EventRepository();
+    _voiceTemplateRepository = VoiceTemplateRepository();
+    _familyRepository = FamilyRepository();
+    _pollRepository = PollRepository();
+    _shareCalendarRepository = ShareCalendarRepository();
+    _authProvider = AuthProvider(_authRepository);
+    _router = createAppRouter(authListenable: _authProvider);
+    unawaited(_loadSettings());
+  }
+
+  @override
+  void dispose() {
+    _authProvider.dispose();
+    _router.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
 
+    if (!mounted) return;
     setState(() {
       _isDarkMode = prefs.getBool('darkMode') ?? false;
 
@@ -102,65 +135,87 @@ class _DayBriefAppState extends State<DayBriefApp> {
     await prefs.setString('categoryColors', _encodeColors(colors));
   }
 
+  void _onCategoryColorsChanged(Map<EventCategory, Color> colors) {
+    setState(() => _categoryColors = colors);
+    unawaited(_saveColors(colors));
+  }
+
+  void _onThemeChanged(bool isDark) {
+    setState(() => _isDarkMode = isDark);
+    unawaited(_saveDarkMode(isDark));
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: const Color(0xFF121212),
+          body: Center(
+            child: CircularProgressIndicator(
+              color: _categoryColors[EventCategory.work],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => EventProvider()),
+        Provider<AuthRepository>.value(value: _authRepository),
+        Provider<EventRepository>.value(value: _eventRepository),
+        Provider<VoiceTemplateRepository>.value(
+            value: _voiceTemplateRepository),
+        Provider<FamilyRepository>.value(value: _familyRepository),
+        Provider<PollRepository>.value(value: _pollRepository),
+        Provider<ShareCalendarRepository>.value(
+            value: _shareCalendarRepository),
+        ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
+        ChangeNotifierProxyProvider<AuthProvider, EventProvider>(
+          create: (_) => EventProvider(
+            authRepository: _authRepository,
+            eventRepository: _eventRepository,
+          ),
+          update: (_, auth, previous) {
+            final provider = previous ??
+                EventProvider(
+                  authRepository: _authRepository,
+                  eventRepository: _eventRepository,
+                );
+            unawaited(provider.syncWithAuth(
+              userId: auth.userId,
+              isAuthenticated: auth.isAuthenticated,
+              isDemoMode: auth.isDemoMode,
+            ));
+            return provider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => VoiceProvider()),
-        ChangeNotifierProvider(create: (_) => VoiceTemplateProvider()),
+        ChangeNotifierProvider(
+          create: (_) => VoiceTemplateProvider(_voiceTemplateRepository),
+        ),
       ],
-      child: Builder(
-        builder: (context) {
-          if (_isLoading) {
-            return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                backgroundColor: const Color(0xFF121212),
-                body: Center(
-                  child: CircularProgressIndicator(
-                    color: _categoryColors[EventCategory.work],
-                  ),
-                ),
-              ),
-            );
-          }
-
-          return MaterialApp(
-            title: 'DayBrief',
-            debugShowCheckedModeBanner: false,
-            themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            theme: AppTheme.lightTheme.copyWith(
-              extensions: <ThemeExtension<dynamic>>[
-                CategoryColors(_categoryColors),
-              ],
-            ),
-            darkTheme: AppTheme.darkTheme.copyWith(
-              extensions: <ThemeExtension<dynamic>>[
-                CategoryColors(_categoryColors),
-              ],
-            ),
-            home: Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                if (auth.isAuthenticated) {
-                  return HomeScreen(
-                    categoryColors: _categoryColors,
-                    onCategoryColorsChanged: (colors) {
-                      setState(() => _categoryColors = colors);
-                      _saveColors(colors);
-                    },
-                    onThemeChanged: (isDark) {
-                      setState(() => _isDarkMode = isDark);
-                      _saveDarkMode(isDark);
-                    },
-                  );
-                }
-                return const AuthScreen();
-              },
-            ),
-          );
-        },
+      child: AppScope(
+        categoryColors: _categoryColors,
+        onCategoryColorsChanged: _onCategoryColorsChanged,
+        onThemeChanged: _onThemeChanged,
+        child: MaterialApp.router(
+          title: 'DayBrief',
+          debugShowCheckedModeBanner: false,
+          themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          theme: AppTheme.lightTheme.copyWith(
+            extensions: <ThemeExtension<dynamic>>[
+              CategoryColors(_categoryColors),
+            ],
+          ),
+          darkTheme: AppTheme.darkTheme.copyWith(
+            extensions: <ThemeExtension<dynamic>>[
+              CategoryColors(_categoryColors),
+            ],
+          ),
+          routerConfig: _router,
+        ),
       ),
     );
   }

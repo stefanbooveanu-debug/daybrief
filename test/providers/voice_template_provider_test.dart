@@ -5,12 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:day_brief/models/voice_template.dart';
 import 'package:day_brief/providers/voice_template_provider.dart';
+import 'package:day_brief/repositories/voice_template_repository.dart';
 
 /// VoiceTemplateProvider does async work in its constructor (_loadTemplates).
 /// This helper builds the provider and pumps the microtask queue until the
 /// initial load finishes.
 Future<VoiceTemplateProvider> _ready() async {
-  final p = VoiceTemplateProvider();
+  final prefs = await SharedPreferences.getInstance();
+  final p = VoiceTemplateProvider(VoiceTemplateRepository(prefs: prefs));
   // _loadTemplates kicks off; let microtasks settle.
   while (p.isLoading) {
     await Future<void>.delayed(Duration.zero);
@@ -117,8 +119,8 @@ void main() {
     test('matches case-insensitive substring of phrase', () async {
       final p = await _ready();
       expect(p.matchTemplate('time to WORKOUT now')?.name, 'Gym Time');
-      expect(p.matchTemplate('Schedule MEETING with team')?.name,
-          'Quick Meeting');
+      expect(
+          p.matchTemplate('Schedule MEETING with team')?.name, 'Quick Meeting');
     });
 
     test('returns null on no match', () async {
