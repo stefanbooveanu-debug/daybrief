@@ -164,6 +164,7 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
         trailing: canDelete
             ? IconButton(
                 icon: Icon(Icons.delete_outline, color: Colors.red[400]),
+                tooltip: 'Delete template',
                 onPressed: () => _deleteTemplate(template.id),
               )
             : null,

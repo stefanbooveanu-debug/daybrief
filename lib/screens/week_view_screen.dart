@@ -80,6 +80,7 @@ class _WeekViewScreenState extends State<WeekViewScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF5F6368)),
+          tooltip: 'Back',
           onPressed: () => context.pop(),
         ),
         title: Column(
@@ -109,10 +110,12 @@ class _WeekViewScreenState extends State<WeekViewScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.chevron_left, color: Color(0xFF5F6368)),
+            tooltip: 'Previous week',
             onPressed: _previousWeek,
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right, color: Color(0xFF5F6368)),
+            tooltip: 'Next week',
             onPressed: _nextWeek,
           ),
         ],
@@ -149,10 +152,12 @@ class _WeekViewScreenState extends State<WeekViewScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
+                  tooltip: 'Previous week',
                   onPressed: _previousWeek,
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
+                  tooltip: 'Next week',
                   onPressed: _nextWeek,
                 ),
               ],

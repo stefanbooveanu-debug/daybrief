@@ -10,10 +10,13 @@ class EventRepository {
     LocalEventStore? localStore,
     FirebaseFirestore? firestore,
   })  : _localStore = localStore ?? LocalEventStore(),
-        _firestore = firestore ?? FirebaseFirestore.instance;
+        _firestoreOverride = firestore;
 
   final LocalEventStore _localStore;
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestoreOverride;
+
+  FirebaseFirestore get _firestore =>
+      _firestoreOverride ?? FirebaseFirestore.instance;
 
   Future<void> setActiveUser(String? userId) =>
       _localStore.setActiveUser(userId);

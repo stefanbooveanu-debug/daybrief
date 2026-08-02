@@ -273,6 +273,7 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
           if (ClaudeService.isSupportedOnPlatform) ...[
             _buildHeaderButton(
               icon: Icons.auto_awesome,
+              label: 'AI daily summary',
               onTap: _showAISummary,
               isDark: isDark,
               color: const Color(0xFF9334E6),
@@ -281,6 +282,7 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
           ],
           _buildHeaderButton(
             icon: Icons.directions_car_rounded,
+            label: 'Driving mode',
             onTap: () => context.push('/driving'),
             isDark: isDark,
             color: const Color(0xFFFF8C69),
@@ -288,18 +290,21 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
           const SizedBox(width: 8),
           _buildHeaderButton(
             icon: Icons.search_rounded,
+            label: 'Search',
             onTap: () => context.push('/search'),
             isDark: isDark,
           ),
           const SizedBox(width: 8),
           _buildHeaderButton(
             icon: isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
+            label: isDark ? 'Switch to light mode' : 'Switch to dark mode',
             onTap: _toggleTheme,
             isDark: isDark,
           ),
           const SizedBox(width: 8),
           _buildHeaderButton(
             icon: Icons.settings_rounded,
+            label: 'Settings',
             onTap: () => context.push('/settings'),
             isDark: isDark,
           ),
@@ -310,30 +315,48 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
 
   Widget _buildHeaderButton({
     required IconData icon,
+    required String label,
     required VoidCallback onTap,
     required bool isDark,
     Color? color,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2A1A0A) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF8C69).withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A1A0A) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF8C69).withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color ?? const Color(0xFFFF8C69),
+                    size: 18,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: color ?? const Color(0xFFFF8C69),
-          size: 18,
+          ),
         ),
       ),
     );
@@ -412,6 +435,7 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
             icon: const Icon(Icons.chevron_left_rounded),
             color: const Color(0xFFFF8C69),
             iconSize: 28,
+            tooltip: 'Previous day',
           ),
           GestureDetector(
             onTap: () {
@@ -470,6 +494,7 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
             icon: const Icon(Icons.chevron_right_rounded),
             color: const Color(0xFFFF8C69),
             iconSize: 28,
+            tooltip: 'Next day',
           ),
         ],
       ),
@@ -477,28 +502,33 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
   }
 
   Widget _buildFAB() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFB347), Color(0xFFFF6B35)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF8C69).withValues(alpha: 0.5),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 6),
+    return Semantics(
+      button: true,
+      label: 'Add event',
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFB347), Color(0xFFFF6B35)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: IconButton(
-        onPressed: _openAddEvent,
-        icon: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF8C69).withValues(alpha: 0.5),
+              blurRadius: 20,
+              spreadRadius: 2,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: IconButton(
+          onPressed: _openAddEvent,
+          tooltip: 'Add event',
+          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+        ),
       ),
     );
   }
@@ -552,26 +582,35 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
     bool isActive = false,
     required bool isDark,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
-            size: 22,
+    return Semantics(
+      button: true,
+      selected: isActive,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
+                size: 22,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      color:
+                          isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
+                    ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: isActive ? const Color(0xFFFF8C69) : Colors.grey[400],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

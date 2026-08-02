@@ -89,16 +89,19 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.today, color: Color(0xFF1A73E8)),
+                  tooltip: 'Go to today',
                   onPressed: _goToToday,
                 ),
                 IconButton(
                   icon: Icon(Icons.chevron_left,
                       color: isDark ? Colors.white70 : const Color(0xFF5F6368)),
+                  tooltip: 'Previous month',
                   onPressed: _previousMonth,
                 ),
                 IconButton(
                   icon: Icon(Icons.chevron_right,
                       color: isDark ? Colors.white70 : const Color(0xFF5F6368)),
+                  tooltip: 'Next month',
                   onPressed: _nextMonth,
                 ),
               ],
@@ -297,6 +300,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back,
               color: isDark ? Colors.white : const Color(0xFF5F6368)),
+          tooltip: 'Back',
           onPressed: () => context.pop(),
         ),
         title: Text('Month View',
@@ -306,16 +310,19 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.today, color: Color(0xFF1A73E8)),
+            tooltip: 'Go to today',
             onPressed: _goToToday,
           ),
           IconButton(
             icon: Icon(Icons.chevron_left,
                 color: isDark ? Colors.white70 : const Color(0xFF5F6368)),
+            tooltip: 'Previous month',
             onPressed: _previousMonth,
           ),
           IconButton(
             icon: Icon(Icons.chevron_right,
                 color: isDark ? Colors.white70 : const Color(0xFF5F6368)),
+            tooltip: 'Next month',
             onPressed: _nextMonth,
           ),
         ],

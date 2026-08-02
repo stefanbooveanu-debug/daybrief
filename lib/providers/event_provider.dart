@@ -7,6 +7,7 @@ import '../models/event.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/event_repository.dart';
 import '../utils/async_value.dart';
+import '../utils/logger.dart';
 
 class EventProvider with ChangeNotifier {
   EventProvider({
@@ -101,7 +102,7 @@ class EventProvider with ChangeNotifier {
         notifyListeners();
       },
       onError: (Object error, StackTrace st) {
-        debugPrint('Firestore listen error: $error');
+        DayBriefLog.error('Firestore listen error', error: error, st: st);
         _state = AsyncError<List<Event>>(error, st);
         notifyListeners();
       },
@@ -150,7 +151,7 @@ class EventProvider with ChangeNotifier {
       notifyListeners();
     } catch (e, st) {
       _state = AsyncError<List<Event>>(e, st);
-      debugPrint('Add event error: $e');
+      DayBriefLog.error('Add event error', error: e, st: st);
       notifyListeners();
     }
   }

@@ -176,5 +176,17 @@ void main() {
       expect(prefs.getString('daybrief_events'), isNull);
       expect(prefs.getString('daybrief_events_migrated_user'), isNotNull);
     });
+
+    test('keeps event buckets isolated per user', () async {
+      await db.setActiveUser('alice');
+      await db.insertEvent(ev(id: 'a1', title: 'Alice event'));
+
+      await db.setActiveUser('bob');
+      await db.insertEvent(ev(id: 'b1', title: 'Bob event'));
+      expect((await db.getAllEvents()).map((e) => e.id), ['b1']);
+
+      await db.setActiveUser('alice');
+      expect((await db.getAllEvents()).map((e) => e.id), ['a1']);
+    });
   });
 }

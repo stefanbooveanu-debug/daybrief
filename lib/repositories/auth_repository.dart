@@ -8,10 +8,15 @@ class AuthRepository {
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
   })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+        _firestoreOverride = firestore;
 
   final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestoreOverride;
+
+  /// Lazily resolved so unit tests can inject [FirebaseAuth] without
+  /// initializing a Firebase app for Firestore.
+  FirebaseFirestore get _firestore =>
+      _firestoreOverride ?? FirebaseFirestore.instance;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 

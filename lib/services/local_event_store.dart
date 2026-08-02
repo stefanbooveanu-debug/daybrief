@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/event.dart';
+import '../utils/logger.dart';
 
 /// SharedPreferences-backed local event store, scoped per user.
 class LocalEventStore {
@@ -51,7 +51,7 @@ class LocalEventStore {
         _events = [];
       }
     } catch (e) {
-      debugPrint('Error loading events: $e');
+      DayBriefLog.warning('Error loading events', error: e);
       _events = [];
     }
     _loaded = true;
@@ -74,7 +74,7 @@ class LocalEventStore {
       final jsonStr = jsonEncode(_events.map((e) => e.toMap()).toList());
       await prefs.setString(_storageKey, jsonStr);
     } catch (e) {
-      debugPrint('Error saving events: $e');
+      DayBriefLog.warning('Error saving events', error: e);
     }
   }
 

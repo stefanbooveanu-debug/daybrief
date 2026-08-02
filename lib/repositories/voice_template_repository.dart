@@ -22,7 +22,10 @@ class VoiceTemplateRepository {
     }
     try {
       final decoded = jsonDecode(savedTemplates) as List<dynamic>;
-      return decoded.map((e) => VoiceTemplate.fromMap(e)).toList();
+      return decoded
+          .map(
+              (e) => VoiceTemplate.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList();
     } catch (_) {
       return VoiceTemplate.defaultTemplates;
     }

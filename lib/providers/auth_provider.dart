@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../repositories/auth_repository.dart';
 import '../utils/async_value.dart';
+import '../utils/logger.dart';
 
 class AuthProvider with ChangeNotifier {
   AuthProvider(this._repository) {
@@ -110,7 +111,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await _repository.signOut();
     } catch (e) {
-      debugPrint('Sign out error: $e');
+      DayBriefLog.warning('Sign out error', error: e);
     }
     _isDemoMode = false;
     _user = null;

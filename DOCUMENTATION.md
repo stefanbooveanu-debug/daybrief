@@ -78,7 +78,6 @@ lib/
 │   └── voice_template_provider.dart
 ├── screens/
 │   ├── auth_screen.dart         # Login/Signup (with Demo Mode)
-│   ├── home_screen.dart         # Main day view
 │   ├── week_view_screen.dart
 │   ├── month_view_screen.dart
 │   ├── settings_screen.dart
@@ -87,20 +86,29 @@ lib/
 │   ├── time_report_screen.dart
 │   ├── family_calendar_screen.dart
 │   ├── share_calendar_screen.dart
+│   ├── shared_calendar_view_screen.dart
 │   ├── quick_poll_screen.dart
 │   ├── calendar_sync_screen.dart
 │   └── voice_templates_screen.dart
+├── router/
+│   ├── app_router.dart          # go_router routes + auth redirect
+│   └── home_shell.dart          # Day/Week/Month shell (replaces home_screen)
+├── repositories/                # Auth, Event, Family, Poll, Share, VoiceTemplate
 ├── services/
-│   ├── claude_service.dart      # Claude AI integration
-│   ├── database_service.dart    # Storage (SharedPreferences)
-│   ├── speech_service.dart      # STT
-│   ├── voice_command_service.dart
+│   ├── claude_service.dart      # Claude AI via /api/claude proxy (web)
+│   ├── local_event_store.dart   # Per-user SharedPreferences store
+│   ├── speech_service.dart      # STT + TTS
+│   ├── voice_command_service.dart  # Canonical voice intent router
 │   ├── google_calendar_service.dart
-│   └── firebase_service.dart
+│   ├── share_calendar_service.dart
+│   └── poll_service.dart
+├── l10n/                        # gen-l10n (en / ro)
 ├── utils/
-│   └── date_utils.dart          # Cached DateFormatters
+│   ├── date_utils.dart
+│   ├── async_value.dart
+│   └── logger.dart              # DayBriefLog
 ├── widgets/
-│   ├── add_event_sheet.dart     # Event creation (with AI)
+│   ├── add_event_sheet.dart     # Event creation (with AI on web)
 │   ├── event_card.dart
 │   ├── voice_assistant_button.dart
 │   └── animated_theme.dart
@@ -112,9 +120,11 @@ lib/
 ### State Management
 
 - `AuthProvider` - User authentication and demo mode
-- `EventProvider` - Event CRUD operations with in-memory cache
+- `EventProvider` - Event CRUD via `EventRepository` + `AsyncValue`
 - `VoiceProvider` - Voice assistant state (listening/speaking)
 - `VoiceTemplateProvider` - Custom voice command templates
+- `FamilyProvider` / `PollProvider` / `SettingsProvider` - feature + prefs state
+- **Voice routing:** `VoiceCommandService` is the canonical voice intent router
 
 ---
 
@@ -160,7 +170,7 @@ The app was developed in multiple phases:
 - Voice templates
 
 ### Phase 6: Persistence & Platforms
-- SQLite for offline-first storage
+- Local SharedPreferences store for offline/demo events (`LocalEventStore`)
 - TTS web compatibility
 - Driving mode (voice-only)
 
@@ -184,7 +194,7 @@ Recent changes from this session (most recent first):
 **Changes:**
 - Added semi-transparent background to AI input field (was white text on white)
 - Full dark mode support for AddEventSheet
-- **Replaced SQLite with SharedPreferences** (SQLite doesn't work on web browsers)
+- Local events persist via SharedPreferences (`LocalEventStore`, per-user keys)
 - Events now persist properly across sessions
 
 ### `950fc85` - Claude AI Integration
@@ -316,8 +326,9 @@ Uses OAuth2 via `google_sign_in` package. Set up OAuth credentials in Google Clo
 
 ## Known Issues
 
-- **Web:** SQLite not supported - uses SharedPreferences instead (implemented)
-- **Speech_to_text:** `cancelOnError` deprecation warning (non-blocking)
+- **Mobile AI:** Claude proxy UI is web-only (`kIsWeb`); mobile needs a hosted proxy later
+- **Firestore rules:** Deploy `firestore.rules` after pulling Phase 3+ backend features
+- **Speech_to_text:** platform permission/locale quirks on some devices
 
 ---
 
