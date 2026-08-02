@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import '../app/app_scope.dart';
 import '../models/event.dart';
+import '../providers/auth_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -12,18 +16,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notifications = true;
-  bool _dailySummary = true;
-  bool _voiceAssistant = true;
-  bool _soundEffects = true;
-  bool _hapticFeedback = true;
-  bool _smartSnooze = true;
-  bool _conflictDetection = true;
   bool _isDarkMode = false;
-  TimeOfDay _morningBriefing = const TimeOfDay(hour: 7, minute: 0);
-
   late Map<EventCategory, Color> _categoryColors;
-
   bool _categoryColorsHydrated = false;
 
   @override
@@ -48,6 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = _isDarkMode;
+    final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       backgroundColor:
@@ -88,6 +83,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
                 isDark: isDark,
               ),
+              _buildNavTile(
+                'Language',
+                settings.localeCode == 'ro' ? 'Română' : 'English',
+                Icons.language_outlined,
+                () => _showLanguagePicker(settings),
+                isDark,
+              ),
             ],
             isDark: isDark,
           ),
@@ -99,39 +101,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Event Reminders',
                 'Get notified before events',
                 Icons.notifications_outlined,
-                _notifications,
-                (value) => setState(() => _notifications = value),
+                settings.notifications,
+                settings.setNotifications,
                 isDark: isDark,
               ),
               _buildSwitchTile(
                 'Daily Summary',
                 'Morning schedule summary',
                 Icons.summarize_outlined,
-                _dailySummary,
-                (value) => setState(() => _dailySummary = value),
+                settings.dailySummary,
+                settings.setDailySummary,
                 isDark: isDark,
               ),
               _buildSwitchTile(
                 'Smart Snooze',
                 'Snooze to next free slot',
                 Icons.snooze_outlined,
-                _smartSnooze,
-                (value) => setState(() => _smartSnooze = value),
+                settings.smartSnooze,
+                settings.setSmartSnooze,
                 isDark: isDark,
               ),
               _buildSwitchTile(
                 'Conflict Detection',
                 'Warn when events overlap',
                 Icons.warning_amber_outlined,
-                _conflictDetection,
-                (value) => setState(() => _conflictDetection = value),
+                settings.conflictDetection,
+                settings.setConflictDetection,
                 isDark: isDark,
               ),
               _buildTimeTile(
-                  'Morning Briefing',
-                  '${_morningBriefing.hour}:${_morningBriefing.minute.toString().padLeft(2, '0')}',
-                  Icons.alarm_outlined,
-                  isDark),
+                'Morning Briefing',
+                settings.morningBriefing.label,
+                Icons.alarm_outlined,
+                isDark,
+                settings,
+              ),
+            ],
+            isDark: isDark,
+          ),
+          const SizedBox(height: 24),
+          _buildSection(
+            'Calendar & Sync',
+            [
+              _buildNavTile(
+                'Sync',
+                'Import, export, and Google Calendar',
+                Icons.sync_outlined,
+                () => context.push('/calendar-sync'),
+                isDark,
+              ),
             ],
             isDark: isDark,
           ),
@@ -143,14 +161,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Icons.pie_chart_outline, () {
                 context.push('/time-report');
               }, isDark),
-              _buildSwitchTile(
-                'Smart Shortcuts',
-                'Learn your patterns',
-                Icons.auto_awesome_outlined,
-                true,
-                (value) {},
-                isDark: isDark,
-              ),
             ],
             isDark: isDark,
           ),
@@ -181,29 +191,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             'Voice Assistant',
             [
+              _buildNavTile(
+                'Voice Templates',
+                'Quick phrases for common events',
+                Icons.record_voice_over_outlined,
+                () => context.push('/voice-templates'),
+                isDark,
+              ),
               _buildSwitchTile(
                 'Voice Commands',
                 'Say "Hey DayBrief" to activate',
                 Icons.mic_outlined,
-                _voiceAssistant,
-                (value) => setState(() => _voiceAssistant = value),
+                settings.voiceAssistant,
+                settings.setVoiceAssistant,
                 isDark: isDark,
               ),
               _buildSwitchTile(
                 'Sound Effects',
                 'Play sounds for actions',
                 Icons.volume_up_outlined,
-                _soundEffects,
-                (value) => setState(() => _soundEffects = value),
+                settings.soundEffects,
+                settings.setSoundEffects,
                 isDark: isDark,
               ),
               _buildSwitchTile(
                 'Haptic Feedback',
                 'Vibrate on interactions',
                 Icons.vibration,
-                _hapticFeedback,
-                (value) => setState(() => _hapticFeedback = value),
+                settings.hapticFeedback,
+                settings.setHapticFeedback,
                 isDark: isDark,
+              ),
+            ],
+            isDark: isDark,
+          ),
+          const SizedBox(height: 24),
+          _buildSection(
+            'Account',
+            [
+              _buildNavTile(
+                'Sign Out',
+                'Return to the login screen',
+                Icons.logout,
+                () async {
+                  await context.read<AuthProvider>().signOut();
+                  if (context.mounted) context.go('/auth');
+                },
+                isDark,
               ),
             ],
             isDark: isDark,
@@ -401,16 +435,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _showLanguagePicker(SettingsProvider settings) async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Language'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dialogContext, 'en'),
+            child: const Text('English'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dialogContext, 'ro'),
+            child: const Text('Română'),
+          ),
+        ],
+      ),
+    );
+    if (selected != null) {
+      await settings.setLocaleCode(selected);
+    }
+  }
+
   Widget _buildTimeTile(
-      String title, String value, IconData icon, bool isDark) {
+    String title,
+    String value,
+    IconData icon,
+    bool isDark,
+    SettingsProvider settings,
+  ) {
     return ListTile(
       onTap: () async {
         final time = await showTimePicker(
           context: context,
-          initialTime: _morningBriefing,
+          initialTime: TimeOfDay(
+            hour: settings.morningBriefing.hour,
+            minute: settings.morningBriefing.minute,
+          ),
         );
         if (time != null) {
-          setState(() => _morningBriefing = time);
+          await settings.setMorningBriefing(
+            TimeOfDayMinutes(hour: time.hour, minute: time.minute),
+          );
         }
       },
       leading: Container(

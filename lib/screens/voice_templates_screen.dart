@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
+
 import '../models/event.dart';
 import '../models/voice_template.dart';
 import '../providers/voice_template_provider.dart';
@@ -13,6 +15,8 @@ class VoiceTemplatesScreen extends StatefulWidget {
 }
 
 class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
+  static const _uuid = Uuid();
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -73,7 +77,7 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTemplateDialog(context),
+        onPressed: () => _showTemplateDialog(context),
         backgroundColor: const Color(0xFF1A73E8),
         icon: const Icon(Icons.add, color: Colors.white),
         label:
@@ -123,13 +127,17 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
     );
   }
 
-  Widget _buildTemplateCard(VoiceTemplate template, bool isDark,
-      {bool canDelete = false}) {
+  Widget _buildTemplateCard(
+    VoiceTemplate template,
+    bool isDark, {
+    bool canDelete = false,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       elevation: 1,
       child: ListTile(
+        onTap: () => _showTemplateDialog(context, existing: template),
         leading: CircleAvatar(
           backgroundColor:
               _getCategoryColor(template.category).withValues(alpha: 0.2),
@@ -181,17 +189,19 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
     );
   }
 
-  void _showAddTemplateDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final phraseController = TextEditingController();
-    EventCategory selectedCategory = EventCategory.work;
-    String? defaultTime = '09:00';
+  void _showTemplateDialog(BuildContext context, {VoiceTemplate? existing}) {
+    final isEditing = existing != null;
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    final phraseController =
+        TextEditingController(text: existing?.phrase ?? '');
+    EventCategory selectedCategory = existing?.category ?? EventCategory.work;
+    String? defaultTime = existing?.defaultTime ?? '09:00';
 
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add Voice Template'),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(isEditing ? 'Edit Voice Template' : 'Add Voice Template'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -228,7 +238,9 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
                   value: defaultTime,
                   decoration: const InputDecoration(labelText: 'Default Time'),
                   items: [
-                    const DropdownMenuItem<String?>(child: Text('No default')),
+                    const DropdownMenuItem<String?>(
+                      child: Text('No default'),
+                    ),
                     ...[
                       '06:00',
                       '07:00',
@@ -258,29 +270,42 @@ class _VoiceTemplatesScreenState extends State<VoiceTemplatesScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    phraseController.text.isNotEmpty) {
-                  final template = VoiceTemplate(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: nameController.text,
-                    phrase: phraseController.text,
-                    category: selectedCategory,
-                    defaultTime: defaultTime,
-                    isCustom: true,
-                  );
-                  context.read<VoiceTemplateProvider>().addTemplate(template);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Template added')),
-                  );
+                if (nameController.text.isEmpty ||
+                    phraseController.text.isEmpty) {
+                  return;
                 }
+
+                final provider = context.read<VoiceTemplateProvider>();
+                final template = VoiceTemplate(
+                  id: existing?.id ?? _uuid.v4(),
+                  name: nameController.text.trim(),
+                  phrase: phraseController.text.trim(),
+                  category: selectedCategory,
+                  defaultTime: defaultTime,
+                  isCustom: existing?.isCustom ?? true,
+                );
+
+                if (isEditing) {
+                  provider.updateTemplate(template);
+                } else {
+                  provider.addTemplate(template);
+                }
+
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isEditing ? 'Template updated' : 'Template added',
+                    ),
+                  ),
+                );
               },
-              child: const Text('Add'),
+              child: Text(isEditing ? 'Save' : 'Add'),
             ),
           ],
         ),

@@ -2,15 +2,92 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasPublicCalendar(ownerId) {
+      return exists(/databases/$(database)/documents/public_calendars/$(ownerId))
+        && get(/databases/$(database)/documents/public_calendars/$(ownerId)).data.isActive == true;
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /events/{eventId} {
-      allow read, write: if request.auth != null
+      allow read: if (isSignedIn() && request.auth.uid == resource.data.userId)
+        || hasPublicCalendar(resource.data.userId);
+      allow write: if isSignedIn()
         && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
+      allow create: if isSignedIn()
         && request.auth.uid == request.resource.data.userId;
+    }
+
+    match /public_calendars/{ownerId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    match /families/{familyId} {
+      allow read: if isSignedIn()
+        && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.ownerId == request.auth.uid;
+
+      match /members/{uid} {
+        allow read: if isSignedIn()
+          && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+        allow create: if isSignedIn()
+          && (request.auth.uid == uid
+              || get(/databases/$(database)/documents/families/$(familyId)).data.ownerId
+                  == request.auth.uid);
+        allow update, delete: if isSignedIn()
+          && get(/databases/$(database)/documents/families/$(familyId)).data.ownerId
+              == request.auth.uid;
+      }
+
+      match /events/{eventId} {
+        allow read, write: if isSignedIn()
+          && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+      }
+
+      match /invites/{inviteId} {
+        allow read: if isSignedIn()
+          && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+        allow write: if isSignedIn()
+          && get(/databases/$(database)/documents/families/$(familyId)).data.ownerId
+              == request.auth.uid;
+      }
+    }
+
+    match /share_codes/{code} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.createdBy == request.auth.uid;
+
+      match /options/{optionId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+
+      match /votes/{voteId} {
+        allow read: if true;
+        allow create: if true;
+        allow update, delete: if false;
+      }
     }
   }
 }

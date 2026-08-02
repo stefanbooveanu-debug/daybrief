@@ -2,13 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:day_brief/models/event.dart';
-import 'package:day_brief/services/database_service.dart';
+import 'package:day_brief/services/local_event_store.dart';
 
 void main() {
-  // SharedPreferences requires the binding for mock values.
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late DatabaseService db;
+  late LocalEventStore db;
 
   Event ev({
     required String id,
@@ -25,9 +24,9 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    db = DatabaseService();
-    // DatabaseService is a singleton with internal caching; reset between tests.
+    db = LocalEventStore();
     await db.close();
+    await db.setActiveUser('test_user');
   });
 
   group('insertEvent', () {
@@ -58,9 +57,9 @@ void main() {
     });
 
     test('returns events sorted by dateTime ascending', () async {
-      await db.insertEvent(ev(id: 'late',  dt: DateTime(2026, 5, 25, 18)));
+      await db.insertEvent(ev(id: 'late', dt: DateTime(2026, 5, 25, 18)));
       await db.insertEvent(ev(id: 'early', dt: DateTime(2026, 5, 25, 9)));
-      await db.insertEvent(ev(id: 'mid',   dt: DateTime(2026, 5, 25, 13)));
+      await db.insertEvent(ev(id: 'mid', dt: DateTime(2026, 5, 25, 13)));
       final all = await db.getAllEvents();
       expect(all.map((e) => e.id).toList(), ['early', 'mid', 'late']);
     });
@@ -77,7 +76,7 @@ void main() {
 
     test('includes midnight (00:00) and 23:59 of the same day', () async {
       await db.insertEvent(ev(id: 'midnight', dt: DateTime(2026, 5, 25)));
-      await db.insertEvent(ev(id: 'eod',      dt: DateTime(2026, 5, 25, 23, 59)));
+      await db.insertEvent(ev(id: 'eod', dt: DateTime(2026, 5, 25, 23, 59)));
       final result = await db.getEventsForDay(DateTime(2026, 5, 25));
       expect(result.map((e) => e.id).toSet(), {'midnight', 'eod'});
     });
@@ -92,9 +91,9 @@ void main() {
 
   group('getUpcomingEvents', () {
     test('excludes past events, includes future', () async {
-      final past   = DateTime.now().subtract(const Duration(days: 1));
+      final past = DateTime.now().subtract(const Duration(days: 1));
       final future = DateTime.now().add(const Duration(days: 1));
-      await db.insertEvent(ev(id: 'past',   dt: past));
+      await db.insertEvent(ev(id: 'past', dt: past));
       await db.insertEvent(ev(id: 'future', dt: future));
       final upcoming = await db.getUpcomingEvents();
       expect(upcoming.map((e) => e.id), ['future']);
@@ -104,8 +103,7 @@ void main() {
   group('updateEvent', () {
     test('updates an existing event and returns 1', () async {
       await db.insertEvent(ev(id: 'a', title: 'old'));
-      final result =
-          await db.updateEvent(ev(id: 'a', title: 'new'));
+      final result = await db.updateEvent(ev(id: 'a', title: 'new'));
       expect(result, 1);
       final all = await db.getAllEvents();
       expect(all.single.title, 'new');
@@ -147,18 +145,36 @@ void main() {
   group('persistence', () {
     test('events written by one instance are visible to a fresh one', () async {
       await db.insertEvent(ev(id: 'persisted', title: 'survives'));
-      // Force reload from SharedPreferences.
       await db.close();
+      await db.setActiveUser('test_user');
       final reloaded = await db.getAllEvents();
       expect(reloaded.length, 1);
       expect(reloaded.single.id, 'persisted');
     });
 
-    test('close() resets cache so the next read re-hydrates from prefs', () async {
+    test('close() resets cache so the next read re-hydrates from prefs',
+        () async {
       await db.insertEvent(ev(id: 'a'));
       await db.close();
+      await db.setActiveUser('test_user');
       final all = await db.getAllEvents();
       expect(all.single.id, 'a');
+    });
+  });
+
+  group('user scoping', () {
+    test('migrates legacy daybrief_events key once', () async {
+      SharedPreferences.setMockInitialValues({
+        'daybrief_events':
+            '[{"id":"legacy","userId":"u","title":"old","dateTime":"2026-05-25T09:00:00.000","reminderEnabled":false}]',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await db.close();
+      await db.setActiveUser('migrated_user');
+      final all = await db.getAllEvents();
+      expect(all.map((e) => e.id), ['legacy']);
+      expect(prefs.getString('daybrief_events'), isNull);
+      expect(prefs.getString('daybrief_events_migrated_user'), isNotNull);
     });
   });
 }

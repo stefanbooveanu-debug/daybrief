@@ -1,27 +1,53 @@
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+
 import '../utils/logger.dart';
 
 class SpeechService {
+  SpeechService({String languageCode = 'en'}) : _languageCode = languageCode;
+
   final SpeechToText _speechToText = SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
   bool _isInitialized = false;
   bool _isListening = false;
+  String _languageCode;
+  VoidCallback? _onListeningStopped;
 
   bool get isListening => _isListening;
 
-  Future<bool> initialize() async {
+  String get localeId =>
+      _languageCode.toLowerCase().startsWith('ro') ? 'ro-RO' : 'en-US';
+
+  void setLanguageCode(String languageCode) {
+    _languageCode = languageCode;
+  }
+
+  Future<bool> initialize({String? languageCode}) async {
+    if (languageCode != null) {
+      _languageCode = languageCode;
+    }
     if (_isInitialized) return true;
 
     try {
+      if (!kIsWeb) {
+        await Permission.microphone.request();
+      }
+
       _isInitialized = await _speechToText.initialize(
         onError: (error) => DayBriefLog.warning('Speech error', error: error),
-        onStatus: (status) => DayBriefLog.debug('Speech status: $status'),
+        onStatus: (status) {
+          DayBriefLog.debug('Speech status: $status');
+          if (status == 'done' || status == 'notListening') {
+            _isListening = false;
+            _onListeningStopped?.call();
+          }
+        },
       );
 
       if (!kIsWeb) {
-        await _flutterTts.setLanguage('en-US');
+        await _flutterTts.setLanguage(localeId);
         await _flutterTts.setSpeechRate(0.5);
         await _flutterTts.setVolume(1.0);
         await _flutterTts.setPitch(1.0);
@@ -38,7 +64,13 @@ class SpeechService {
     required Function(String) onResult,
     Function()? onListeningStarted,
     Function()? onListeningStopped,
+    String? languageCode,
   }) async {
+    if (languageCode != null) {
+      _languageCode = languageCode;
+    }
+    _onListeningStopped = onListeningStopped;
+
     if (!_isInitialized) {
       final success = await initialize();
       if (!success) {
@@ -61,6 +93,7 @@ class SpeechService {
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
+        localeId: localeId,
         listenOptions: SpeechListenOptions(
           partialResults: false,
           cancelOnError: true,
@@ -70,6 +103,11 @@ class SpeechService {
       DayBriefLog.error('Listen error', error: e);
       _isListening = false;
       onListeningStopped?.call();
+    } finally {
+      // Status callback is authoritative; this covers early failures.
+      if (!_speechToText.isListening) {
+        _isListening = false;
+      }
     }
   }
 
@@ -80,16 +118,18 @@ class SpeechService {
   }
 
   Future<void> speak(String text) async {
+    if (text.isEmpty) return;
     if (kIsWeb) {
       await _speakWeb(text);
     } else {
+      await _flutterTts.setLanguage(localeId);
       await _flutterTts.speak(text);
     }
   }
 
   Future<void> _speakWeb(String text) async {
     try {
-      await _flutterTts.setLanguage('en-US');
+      await _flutterTts.setLanguage(localeId);
       await _flutterTts.setSpeechRate(0.5);
       await _flutterTts.speak(text);
     } catch (e) {

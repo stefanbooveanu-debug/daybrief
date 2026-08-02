@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../providers/voice_provider.dart';
-import '../providers/event_provider.dart';
-import '../models/event.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../l10n/app_localizations.dart';
+import '../models/event.dart';
+import '../providers/event_provider.dart';
+import '../providers/voice_provider.dart';
 
 class DrivingModeScreen extends StatefulWidget {
   const DrivingModeScreen({super.key});
@@ -15,10 +17,11 @@ class DrivingModeScreen extends StatefulWidget {
 
 class _DrivingModeScreenState extends State<DrivingModeScreen>
     with TickerProviderStateMixin {
-  bool _isListening = false; // microfonul e activ
-  String _statusText = 'Apasă pentru a vorbi'; // textul de status
-  String _lastCommand = ''; // ultimul command recunoscut
-  List<Event> _todayEvents = []; // evenimentele de azi
+  bool _isListening = false;
+  String _statusText = '';
+  String _lastCommand = '';
+  List<Event> _todayEvents = [];
+  bool _statusHydrated = false;
 
   late AnimationController _pulseController; // controller puls microfon
   late AnimationController _waveController; // controller animatie unde
@@ -26,6 +29,15 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   late Animation<double> _wave1; // unda 1
   late Animation<double> _wave2; // unda 2
   late Animation<double> _wave3; // unda 3
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_statusHydrated) {
+      _statusText = AppLocalizations.of(context)!.drivingTapToSpeak;
+      _statusHydrated = true;
+    }
+  }
 
   @override
   void initState() {
@@ -79,13 +91,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   // toggle microfon - pornire/oprire ascultare
   void _toggleListening() {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isListening = !_isListening;
       if (_isListening) {
-        _statusText = 'Ascult...'; // textul cand asculta
+        _statusText = l10n.drivingListening;
         _startListening();
       } else {
-        _statusText = 'Apasă pentru a vorbi'; // textul default
+        _statusText = l10n.drivingTapToSpeak;
         _stopListening();
       }
     });
@@ -94,17 +107,26 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   // pornim ascultarea vocii
   void _startListening() {
     final voiceProvider = context.read<VoiceProvider>();
-    voiceProvider.startListening(onResult: (command) {
-      setState(() {
-        _lastCommand = command; // salvam comanda recunoscuta
-        _isListening = false;
-        _statusText = 'Înțeles!'; // confirmare
-      });
-      _processVoiceCommand(command); // procesam comanda
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _statusText = 'Apasă pentru a vorbi');
-      });
-    });
+    final languageCode = Localizations.localeOf(context).languageCode;
+    voiceProvider.startListening(
+      languageCode: languageCode,
+      onResult: (command) {
+        setState(() {
+          _lastCommand = command;
+          _isListening = false;
+          _statusText = AppLocalizations.of(context)!.drivingUnderstood;
+        });
+        _processVoiceCommand(command);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(
+              () =>
+                  _statusText = AppLocalizations.of(context)!.drivingTapToSpeak,
+            );
+          }
+        });
+      },
+    );
   }
 
   // oprim ascultarea
@@ -136,9 +158,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   // citim evenimentele de azi
   void _speakEvents() {
+    final l10n = AppLocalizations.of(context)!;
     if (_todayEvents.isEmpty) {
-      _speak('You have no events today. Have a great day!');
-      setState(() => _statusText = 'Niciun eveniment azi');
+      _speak(l10n.drivingNoEventsToday);
+      setState(() => _statusText = l10n.drivingNoEventsToday);
     } else {
       final count = _todayEvents.length;
       _speak('Ai $count eveniment${count > 1 ? 'e' : ''} astăzi');
@@ -160,7 +183,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     } else {
       final next = upcoming.first;
       final time = DateFormat('HH:mm').format(next.dateTime);
-      _speak('Urmatorul eveniment este ${next.title} la ora $time');
+      _speak('Următorul eveniment este ${next.title} la ora $time');
       setState(() => _statusText = '${next.title} - $time');
     }
   }
@@ -219,15 +242,15 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                   color: const Color(0xFFFF8C69).withValues(alpha: 0.3),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_back_ios_new_rounded,
+                  const Icon(Icons.arrow_back_ios_new_rounded,
                       color: Color(0xFFFF8C69), size: 14),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
-                    'Ieși',
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.drivingExit,
+                    style: const TextStyle(
                       color: Color(0xFFFF8C69),
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -238,21 +261,20 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             ),
           ),
           const Spacer(),
-          // titlu mod sofat
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Mod Șofat',
-                style: TextStyle(
+                AppLocalizations.of(context)!.drivingModeTitle,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               Text(
-                'Control doar prin voce',
-                style: TextStyle(
+                AppLocalizations.of(context)!.drivingModeSubtitle,
+                style: const TextStyle(
                   color: Colors.grey,
                   fontSize: 11,
                 ),
@@ -436,7 +458,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
           const SizedBox(width: 10),
           Text(
             _todayEvents.isEmpty
-                ? 'Niciun eveniment azi'
+                ? AppLocalizations.of(context)!.drivingNoEventsToday
                 : '${_todayEvents.length} eveniment${_todayEvents.length > 1 ? 'e' : ''} azi',
             style: const TextStyle(
               color: Colors.white,
@@ -451,10 +473,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   // comenzi rapide afisate in josul ecranului
   Widget _buildQuickCommands() {
+    final l10n = AppLocalizations.of(context)!;
     final commands = [
-      ('Ce am azi?', Icons.list_alt_rounded),
-      ('Urmatorul', Icons.skip_next_rounded),
-      ('Cât e ora?', Icons.access_time_rounded),
+      (l10n.drivingWhatToday, Icons.list_alt_rounded),
+      (l10n.drivingNext, Icons.skip_next_rounded),
+      (l10n.drivingWhatTime, Icons.access_time_rounded),
     ];
 
     return Padding(
@@ -462,7 +485,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       child: Column(
         children: [
           Text(
-            'Comenzi rapide',
+            l10n.drivingQuickCommands,
             style: TextStyle(
               color: Colors.grey[700],
               fontSize: 11,

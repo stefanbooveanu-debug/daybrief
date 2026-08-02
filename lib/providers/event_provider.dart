@@ -62,6 +62,9 @@ class EventProvider with ChangeNotifier {
     await _firestoreSubscription?.cancel();
     _firestoreSubscription = null;
 
+    final scopedUserId = isDemoMode ? 'demo_user' : userId;
+    await _eventRepository.setActiveUser(scopedUserId);
+
     if (userId != null && !isDemoMode) {
       _listenToFirestoreEvents(userId);
       return;

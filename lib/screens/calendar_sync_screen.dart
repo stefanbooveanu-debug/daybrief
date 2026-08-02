@@ -314,11 +314,11 @@ class _CalendarSyncScreenState extends State<CalendarSyncScreen> {
     });
 
     try {
-      await _calendarService.signIn();
+      final signedIn = await _calendarService.signIn();
 
       if (!mounted) return;
 
-      if (_calendarService.isConnected) {
+      if (signedIn && _calendarService.isConnected) {
         setState(() => _statusMessage = 'Connected! Syncing events...');
 
         int syncedCount = 0;

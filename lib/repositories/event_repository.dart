@@ -3,17 +3,20 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/event.dart';
-import '../services/database_service.dart';
+import '../services/local_event_store.dart';
 
 class EventRepository {
   EventRepository({
-    DatabaseService? localStore,
+    LocalEventStore? localStore,
     FirebaseFirestore? firestore,
-  })  : _localStore = localStore ?? DatabaseService(),
+  })  : _localStore = localStore ?? LocalEventStore(),
         _firestore = firestore ?? FirebaseFirestore.instance;
 
-  final DatabaseService _localStore;
+  final LocalEventStore _localStore;
   final FirebaseFirestore _firestore;
+
+  Future<void> setActiveUser(String? userId) =>
+      _localStore.setActiveUser(userId);
 
   Stream<List<Event>> watchFirestoreEvents(String userId) {
     return _firestore

@@ -1,14 +1,22 @@
 import 'dart:async';
 
-import 'package:go_router/go_router.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'app/app_scope.dart';
 import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
+import 'models/event.dart';
 import 'providers/auth_provider.dart';
 import 'providers/event_provider.dart';
+import 'providers/family_provider.dart';
+import 'providers/poll_provider.dart';
+import 'providers/settings_provider.dart';
 import 'providers/voice_provider.dart';
 import 'providers/voice_template_provider.dart';
 import 'repositories/auth_repository.dart';
@@ -18,10 +26,10 @@ import 'repositories/poll_repository.dart';
 import 'repositories/share_calendar_repository.dart';
 import 'repositories/voice_template_repository.dart';
 import 'router/app_router.dart';
+import 'services/poll_service.dart';
+import 'services/share_calendar_service.dart';
 import 'theme/app_theme.dart';
-import 'models/event.dart';
 import 'utils/logger.dart';
-import 'app/app_scope.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +45,7 @@ void main() async {
 
   try {
     await initializeDateFormatting('en_US');
+    await initializeDateFormatting('ro_RO');
   } catch (e) {
     // fallback
   }
@@ -62,7 +71,10 @@ class _DayBriefAppState extends State<DayBriefApp> {
   late final FamilyRepository _familyRepository;
   late final PollRepository _pollRepository;
   late final ShareCalendarRepository _shareCalendarRepository;
+  late final ShareCalendarService _shareCalendarService;
+  late final PollService _pollService;
   late final AuthProvider _authProvider;
+  late final SettingsProvider _settingsProvider;
   late final GoRouter _router;
 
   @override
@@ -74,7 +86,10 @@ class _DayBriefAppState extends State<DayBriefApp> {
     _familyRepository = FamilyRepository();
     _pollRepository = PollRepository();
     _shareCalendarRepository = ShareCalendarRepository();
+    _shareCalendarService = ShareCalendarService(_shareCalendarRepository);
+    _pollService = PollService(_pollRepository);
     _authProvider = AuthProvider(_authRepository);
+    _settingsProvider = SettingsProvider();
     _router = createAppRouter(authListenable: _authProvider);
     unawaited(_loadSettings());
   }
@@ -82,12 +97,14 @@ class _DayBriefAppState extends State<DayBriefApp> {
   @override
   void dispose() {
     _authProvider.dispose();
+    _settingsProvider.dispose();
     _router.dispose();
     super.dispose();
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    await _settingsProvider.load();
 
     if (!mounted) return;
     setState(() {
@@ -171,6 +188,8 @@ class _DayBriefAppState extends State<DayBriefApp> {
         Provider<PollRepository>.value(value: _pollRepository),
         Provider<ShareCalendarRepository>.value(
             value: _shareCalendarRepository),
+        Provider<ShareCalendarService>.value(value: _shareCalendarService),
+        Provider<PollService>.value(value: _pollService),
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProxyProvider<AuthProvider, EventProvider>(
           create: (_) => EventProvider(
@@ -195,26 +214,49 @@ class _DayBriefAppState extends State<DayBriefApp> {
         ChangeNotifierProvider(
           create: (_) => VoiceTemplateProvider(_voiceTemplateRepository),
         ),
+        ChangeNotifierProvider(
+          create: (_) => FamilyProvider(_familyRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PollProvider(_pollService),
+        ),
+        ChangeNotifierProvider<SettingsProvider>.value(
+          value: _settingsProvider,
+        ),
       ],
       child: AppScope(
         categoryColors: _categoryColors,
         onCategoryColorsChanged: _onCategoryColorsChanged,
         onThemeChanged: _onThemeChanged,
-        child: MaterialApp.router(
-          title: 'DayBrief',
-          debugShowCheckedModeBanner: false,
-          themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          theme: AppTheme.lightTheme.copyWith(
-            extensions: <ThemeExtension<dynamic>>[
-              CategoryColors(_categoryColors),
-            ],
-          ),
-          darkTheme: AppTheme.darkTheme.copyWith(
-            extensions: <ThemeExtension<dynamic>>[
-              CategoryColors(_categoryColors),
-            ],
-          ),
-          routerConfig: _router,
+        child: ListenableBuilder(
+          listenable: _settingsProvider,
+          builder: (context, _) {
+            final localeCode = _settingsProvider.localeCode;
+            return MaterialApp.router(
+              title: 'DayBrief',
+              debugShowCheckedModeBanner: false,
+              locale: Locale(localeCode),
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              theme: AppTheme.lightTheme.copyWith(
+                extensions: <ThemeExtension<dynamic>>[
+                  CategoryColors(_categoryColors),
+                ],
+              ),
+              darkTheme: AppTheme.darkTheme.copyWith(
+                extensions: <ThemeExtension<dynamic>>[
+                  CategoryColors(_categoryColors),
+                ],
+              ),
+              routerConfig: _router,
+            );
+          },
         ),
       ),
     );

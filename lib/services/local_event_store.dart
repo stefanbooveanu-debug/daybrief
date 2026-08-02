@@ -1,27 +1,54 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/event.dart';
 
-class DatabaseService {
-  static final DatabaseService _instance = DatabaseService._internal();
-  static const String _eventsKey = 'daybrief_events';
+/// SharedPreferences-backed local event store, scoped per user.
+class LocalEventStore {
+  static final LocalEventStore _instance = LocalEventStore._internal();
 
-  factory DatabaseService() => _instance;
-  DatabaseService._internal();
+  static const _legacyKey = 'daybrief_events';
 
-  // In-memory cache
+  factory LocalEventStore() => _instance;
+  LocalEventStore._internal();
+
+  String? _activeUserId;
   List<Event> _events = [];
   bool _loaded = false;
+
+  String get _storageKey {
+    final userId = _activeUserId;
+    if (userId == null || userId.isEmpty) {
+      return 'daybrief_events_anonymous';
+    }
+    return 'daybrief_events_$userId';
+  }
+
+  /// Switch the active user bucket. Reloads cache on change.
+  Future<void> setActiveUser(String? userId) async {
+    if (_activeUserId == userId && _loaded) return;
+    _activeUserId = userId;
+    _loaded = false;
+    _events = [];
+    await _ensureLoaded();
+  }
 
   Future<void> _ensureLoaded() async {
     if (_loaded) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_eventsKey);
+      await _migrateLegacyIfNeeded(prefs);
+
+      final jsonStr = prefs.getString(_storageKey);
       if (jsonStr != null && jsonStr.isNotEmpty) {
-        final List<dynamic> list = jsonDecode(jsonStr);
-        _events = list.map((m) => Event.fromMap(Map<String, dynamic>.from(m))).toList();
+        final List<dynamic> list = jsonDecode(jsonStr) as List<dynamic>;
+        _events = list
+            .map((m) => Event.fromMap(Map<String, dynamic>.from(m as Map)))
+            .toList();
+      } else {
+        _events = [];
       }
     } catch (e) {
       debugPrint('Error loading events: $e');
@@ -30,11 +57,22 @@ class DatabaseService {
     _loaded = true;
   }
 
+  Future<void> _migrateLegacyIfNeeded(SharedPreferences prefs) async {
+    final legacy = prefs.getString(_legacyKey);
+    if (legacy == null || legacy.isEmpty) return;
+
+    final current = prefs.getString(_storageKey);
+    if (current == null || current.isEmpty) {
+      await prefs.setString(_storageKey, legacy);
+    }
+    await prefs.remove(_legacyKey);
+  }
+
   Future<void> _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = jsonEncode(_events.map((e) => e.toMap()).toList());
-      await prefs.setString(_eventsKey, jsonStr);
+      await prefs.setString(_storageKey, jsonStr);
     } catch (e) {
       debugPrint('Error saving events: $e');
     }
@@ -42,7 +80,6 @@ class DatabaseService {
 
   Future<int> insertEvent(Event event) async {
     await _ensureLoaded();
-    // Remove existing with same ID (replace)
     _events.removeWhere((e) => e.id == event.id);
     _events.add(event);
     await _save();
@@ -58,11 +95,13 @@ class DatabaseService {
 
   Future<List<Event>> getEventsForDay(DateTime day) async {
     await _ensureLoaded();
-    return _events.where((e) =>
-      e.dateTime.year == day.year &&
-      e.dateTime.month == day.month &&
-      e.dateTime.day == day.day
-    ).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return _events
+        .where((e) =>
+            e.dateTime.year == day.year &&
+            e.dateTime.month == day.month &&
+            e.dateTime.day == day.day)
+        .toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
   Future<List<Event>> getUpcomingEvents() async {

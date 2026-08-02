@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../app/app_scope.dart';
+import '../l10n/app_localizations.dart';
 import '../models/event.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
@@ -231,13 +232,14 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
 
   Widget _buildHeader(bool isDark, Color textColor, Color cardColor) {
     final authProvider = context.watch<AuthProvider>();
+    final l10n = AppLocalizations.of(context)!;
     final userName = authProvider.userName ?? 'User';
     final hour = DateTime.now().hour;
     final greeting = hour < 12
-        ? 'Good morning'
+        ? l10n.greetingMorning
         : hour < 18
-            ? 'Good afternoon'
-            : 'Good evening';
+            ? l10n.greetingAfternoon
+            : l10n.greetingEvening;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -418,7 +420,8 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
             child: Column(
               children: [
                 Text(
-                  DateFormat('EEEE', 'en_US').format(_selectedDay),
+                  DateFormat('EEEE', Localizations.localeOf(context).toString())
+                      .format(_selectedDay),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
@@ -429,7 +432,10 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Text(
-                      DateFormat('MMMM d, yyyy', 'en_US').format(_selectedDay),
+                      DateFormat(
+                        'MMMM d, yyyy',
+                        Localizations.localeOf(context).toString(),
+                      ).format(_selectedDay),
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -515,21 +521,21 @@ class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
         children: [
           _buildNavItem(
             icon: Icons.calendar_today_rounded,
-            label: 'Calendar',
+            label: AppLocalizations.of(context)!.navCalendar,
             onTap: () => context.go('/home'),
             isActive: viewIndex >= 0 && viewIndex <= 2,
             isDark: isDark,
           ),
           _buildNavItem(
             icon: Icons.people_alt_rounded,
-            label: 'Familie',
+            label: AppLocalizations.of(context)!.navFamily,
             onTap: () => context.push('/family'),
             isDark: isDark,
           ),
           const SizedBox(width: 60),
           _buildNavItem(
             icon: Icons.bar_chart_rounded,
-            label: 'Rapoarte',
+            label: AppLocalizations.of(context)!.navReports,
             onTap: () => context.push('/time-report'),
             isDark: isDark,
           ),
@@ -606,7 +612,7 @@ class DayViewBody extends StatelessWidget {
               ),
             ),
           AsyncIdle() || AsyncData() => events.isEmpty
-              ? _buildEmptyState(textColor)
+              ? _buildEmptyState(context, textColor)
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                   itemCount: events.length,
@@ -627,7 +633,8 @@ class DayViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(Color textColor) {
+  Widget _buildEmptyState(BuildContext context, Color textColor) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -647,7 +654,7 @@ class DayViewBody extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Niciun eveniment',
+            l10n.emptyEventsTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -656,7 +663,7 @@ class DayViewBody extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Apasă + pentru a adăuga ceva',
+            l10n.emptyEventsSubtitle,
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey[400],

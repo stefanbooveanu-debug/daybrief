@@ -37,10 +37,12 @@ class VoiceProvider with ChangeNotifier {
   Future<void> startListening({
     required Function(String) onResult,
     Function()? onWakeWordDetected,
+    String? languageCode,
   }) async {
     if (_isListening) return;
 
     await _speechService.startListening(
+      languageCode: languageCode,
       onResult: (text) {
         _lastResult = text;
         if (_speechService.isWakeWord(text, _wakeWord)) {

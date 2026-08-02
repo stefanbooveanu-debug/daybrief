@@ -11,6 +11,7 @@ import '../screens/quick_poll_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/share_calendar_screen.dart';
+import '../screens/shared_calendar_view_screen.dart';
 import '../screens/time_report_screen.dart';
 import '../screens/voice_templates_screen.dart';
 import '../screens/week_view_screen.dart';
@@ -21,8 +22,16 @@ GoRouter createAppRouter({required AuthProvider authListenable}) {
     initialLocation: '/home',
     refreshListenable: authListenable,
     redirect: (context, state) {
+      final location = state.matchedLocation;
+      final isSharedRoute = location.startsWith('/shared/');
+      final isPollRoute = location.startsWith('/poll/');
       final isAuthenticated = authListenable.isAuthenticated;
-      final isAuthRoute = state.matchedLocation == '/auth';
+      final isAuthRoute = location == '/auth';
+
+      // Public viewer routes (share links + poll participation).
+      if (isSharedRoute || isPollRoute) {
+        return null;
+      }
 
       if (!isAuthenticated && !isAuthRoute) {
         return '/auth';
@@ -101,6 +110,12 @@ GoRouter createAppRouter({required AuthProvider authListenable}) {
       GoRoute(
         path: '/time-report',
         builder: (context, state) => const TimeReportScreen(),
+      ),
+      GoRoute(
+        path: '/shared/:code',
+        builder: (context, state) => SharedCalendarViewScreen(
+          code: state.pathParameters['code']!,
+        ),
       ),
     ],
   );
