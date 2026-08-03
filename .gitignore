@@ -49,3 +49,7 @@ lib/config/app_config.dart
 # Local agent overrides (Claude Code)
 CLAUDE.local.md
 
+
+# Vercel / Flutter SDK clone used in CI builds
+.vercel
+/flutter/
