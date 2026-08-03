@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/event.dart';
+import '../providers/event_provider.dart';
 import '../services/places_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
+import 'add_event_sheet.dart';
 
 class EventCard extends StatelessWidget {
   static final _cachedTimeFormat = app_date_utils.DateUtils.timeFormat;
@@ -525,7 +528,25 @@ class EventCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _openEditSheet(context);
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -551,7 +572,7 @@ class EventCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      if (onDuplicate != null) onDuplicate!();
+                      _duplicateEvent(context);
                     },
                     icon: Icon(Icons.copy, color: _getEventColor(context)),
                     label: Text('Duplicate',
@@ -570,7 +591,7 @@ class EventCard extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      if (onComplete != null) onComplete!();
+                      _toggleComplete(context);
                     },
                     icon: Icon(event.isCompleted ? Icons.replay : Icons.check),
                     label: Text(event.isCompleted ? 'Undo' : 'Done'),
@@ -596,6 +617,39 @@ class EventCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _openEditSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddEventSheet(existingEvent: event),
+    );
+  }
+
+  void _duplicateEvent(BuildContext context) {
+    if (onDuplicate != null) {
+      onDuplicate!();
+      return;
+    }
+    final provider = context.read<EventProvider>();
+    provider.addEvent(
+      event.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        isCompleted: false,
+      ),
+    );
+  }
+
+  void _toggleComplete(BuildContext context) {
+    if (onComplete != null) {
+      onComplete!();
+      return;
+    }
+    context.read<EventProvider>().updateEvent(
+          event.copyWith(isCompleted: !event.isCompleted),
+        );
   }
 
   void _confirmDelete(BuildContext context) {

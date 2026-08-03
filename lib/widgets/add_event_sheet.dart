@@ -13,7 +13,10 @@ import 'location_autocomplete_field.dart';
 class AddEventSheet extends StatefulWidget {
   final DateTime? initialDate;
 
-  const AddEventSheet({super.key, this.initialDate});
+  /// When set, the sheet edits this event instead of creating a new one.
+  final Event? existingEvent;
+
+  const AddEventSheet({super.key, this.initialDate, this.existingEvent});
 
   @override
   State<AddEventSheet> createState() => _AddEventSheetState();
@@ -61,11 +64,26 @@ class _AddEventSheetState extends State<AddEventSheet> {
     (label: 'Night', hint: '9:00', hour: 21, icon: Icons.bedtime_outlined),
   ];
 
+  bool get _isEditing => widget.existingEvent != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedTime = TimeOfDay.now();
-    _selectedDate = widget.initialDate ?? DateTime.now();
+    final existing = widget.existingEvent;
+    if (existing != null) {
+      _titleController.text = existing.title;
+      _descriptionController.text = existing.description ?? '';
+      _locationController.text = existing.location ?? '';
+      _selectedDate = existing.dateTime;
+      _selectedTime = TimeOfDay.fromDateTime(existing.dateTime);
+      _selectedCategory = existing.category ?? EventCategory.other;
+      _reminderEnabled = existing.reminderEnabled;
+      _showDetails = (existing.description?.isNotEmpty ?? false) ||
+          (existing.location?.isNotEmpty ?? false);
+    } else {
+      _selectedTime = TimeOfDay.now();
+      _selectedDate = widget.initialDate ?? DateTime.now();
+    }
   }
 
   @override
@@ -149,7 +167,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
     }
   }
 
-  Future<void> _addEvent() async {
+  Future<void> _saveEvent() async {
     if (!_formKey.currentState!.validate()) {
       _titleFocus.requestFocus();
       return;
@@ -168,18 +186,33 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
     final locationText = _locationController.text.trim();
     final descriptionText = _descriptionController.text.trim();
-    final event = Event(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
-      dateTime: eventDateTime,
-      description: descriptionText.isEmpty ? null : descriptionText,
-      category: _selectedCategory,
-      location: locationText.isEmpty ? null : locationText,
-      reminderEnabled: _reminderEnabled,
-      userId: authProvider.userId ?? '',
-    );
+    final existing = widget.existingEvent;
 
-    await eventProvider.addEvent(event);
+    final event = existing != null
+        ? existing.copyWith(
+            title: _titleController.text.trim(),
+            dateTime: eventDateTime,
+            description: descriptionText.isEmpty ? null : descriptionText,
+            category: _selectedCategory,
+            location: locationText.isEmpty ? null : locationText,
+            reminderEnabled: _reminderEnabled,
+          )
+        : Event(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            title: _titleController.text.trim(),
+            dateTime: eventDateTime,
+            description: descriptionText.isEmpty ? null : descriptionText,
+            category: _selectedCategory,
+            location: locationText.isEmpty ? null : locationText,
+            reminderEnabled: _reminderEnabled,
+            userId: authProvider.userId ?? '',
+          );
+
+    if (_isEditing) {
+      await eventProvider.updateEvent(event);
+    } else {
+      await eventProvider.addEvent(event);
+    }
 
     if (!mounted) return;
     await HapticFeedback.mediumImpact();
@@ -187,7 +220,9 @@ class _AddEventSheetState extends State<AddEventSheet> {
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added “${event.title}”'),
+        content: Text(
+          _isEditing ? 'Updated “${event.title}”' : 'Added “${event.title}”',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -237,12 +272,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   shrinkWrap: true,
                   children: [
                     _Header(
+                      title: _isEditing ? 'Edit event' : 'New event',
                       dateLabel:
                           DateFormat('EEEE, MMM d').format(_selectedDate),
                       onClose: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(height: 18),
-                    if (ClaudeService.isSupportedOnPlatform) ...[
+                    if (!_isEditing && ClaudeService.isSupportedOnPlatform) ...[
                       _AiComposer(
                         controller: _aiInputController,
                         loading: _aiLoading,
@@ -253,7 +289,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     TextFormField(
                       controller: _titleController,
                       focusNode: _titleFocus,
-                      autofocus: true,
+                      autofocus: !_isEditing,
                       textCapitalization: TextCapitalization.sentences,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
@@ -368,7 +404,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 8, 22, 16),
                 child: FilledButton(
-                  onPressed: _addEvent,
+                  onPressed: _saveEvent,
                   style: FilledButton.styleFrom(
                     backgroundColor: categoryColor,
                     foregroundColor: Colors.white,
@@ -378,9 +414,9 @@ class _AddEventSheetState extends State<AddEventSheet> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Add to calendar',
-                    style: TextStyle(
+                  child: Text(
+                    _isEditing ? 'Save changes' : 'Add to calendar',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.1,
@@ -397,8 +433,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.dateLabel, required this.onClose});
+  const _Header({
+    required this.title,
+    required this.dateLabel,
+    required this.onClose,
+  });
 
+  final String title;
   final String dateLabel;
   final VoidCallback onClose;
 
@@ -415,7 +456,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'New event',
+                title,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,

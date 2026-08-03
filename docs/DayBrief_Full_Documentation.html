@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayBrief — Full Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1b1f2a;
+    --border: #252a38;
+    --accent: #5b8cff;
+    --accent2: #ff8c5b;
+    --green: #4ecb8d;
+    --yellow: #f5c542;
+    --text: #e8eaf0;
+    --muted: #7a82a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #0d1428 0%, #111827 60%, #0d0f14 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 56px 48px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(91,140,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,140,91,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(91,140,255,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(91,140,255,0.25);
+    border-radius: 4px;
+    padding: 3px 10px;
+    margin-bottom: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  header h1 {
+    font-family: var(--mono);
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 14px;
+    font-family: var(--mono);
+  }
+
+  /* Nav */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  nav a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 14px 16px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  nav a:hover { color: var(--text); border-color: var(--border); }
+  nav a.active { color: var(--accent); border-color: var(--accent); }
+
+  /* Layout */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  section { margin-bottom: 64px; }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-size: 0.85rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 28px 0 16px;
+  }
+
+  /* Feature Table */
+  .feat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .feat-table thead tr {
+    background: var(--surface2);
+  }
+  .feat-table th {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .feat-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(37,42,56,0.6);
+    vertical-align: top;
+  }
+  .feat-table tbody tr:hover { background: var(--surface2); }
+  .feat-table td:first-child {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    width: 32px;
+  }
+  .feat-table td:nth-child(2) { font-weight: 500; color: var(--text); }
+  .feat-table td code {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(91,140,255,0.08);
+    color: var(--accent);
+    border: 1px solid rgba(91,140,255,0.15);
+    border-radius: 4px;
+    padding: 2px 7px;
+    display: inline-block;
+    margin: 1px 2px;
+  }
+  .feat-table td:last-child { color: var(--muted); font-size: 13px; }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: 3px;
+    padding: 2px 8px;
+  }
+  .badge-done { background: rgba(78,203,141,0.12); color: var(--green); border: 1px solid rgba(78,203,141,0.2); }
+  .badge-planned { background: rgba(245,197,66,0.1); color: var(--yellow); border: 1px solid rgba(245,197,66,0.2); }
+  .badge-wip { background: rgba(255,140,91,0.1); color: var(--accent2); border: 1px solid rgba(255,140,91,0.2); }
+
+  /* Packages grid */
+  .pkg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .pkg-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pkg-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .pkg-version {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .pkg-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .pkg-card.future { border-color: rgba(245,197,66,0.15); }
+  .pkg-card.future .pkg-name { color: var(--yellow); }
+
+  /* File tree */
+  .file-tree {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .file-tree .dir { color: var(--accent); font-weight: 700; }
+  .file-tree .file { color: var(--text); }
+  .file-tree .comment { color: var(--muted); font-size: 12px; }
+  .file-tree .indent1 { padding-left: 24px; }
+  .file-tree .indent2 { padding-left: 48px; }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 48px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  footer span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">Flutter / Firebase · v1.0 · Nokia Timișoara ready</div>
+  <h1>DayBrief</h1>
+  <p>Full Project Documentation &mdash; Last Updated: August 3, 2026</p>
+  <p style="margin-top:8px;color:var(--muted);font-family:var(--mono);font-size:12px;">Repo: github.com/stefanbooveanu-debug/daybrief · latest: feat polish demo path for Nokia pitch</p>
+</header>
+
+<nav>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#features-done">Done</a>
+  <a href="#features-partial">Partial</a>
+  <a href="#features-planned">Not done</a>
+  <a href="#stack">Tech Stack</a>
+  <a href="#structure">File Structure</a>
+</nav>
+
+<main>
+
+  <div class="stats" style="margin-top:40px;" id="overview">
+    <div class="stat-card">
+      <div class="stat-num">29</div>
+      <div class="stat-label">Done</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">7</div>
+      <div class="stat-label">Partial</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">10</div>
+      <div class="stat-label">Not done</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">~58</div>
+      <div class="stat-label">Dart sources</div>
+    </div>
+  </div>
+
+  <section id="features-done">
+    <h2>Done — working in the app</h2>
+    <table class="feat-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Feature</th>
+          <th>Component / File</th>
+          <th>Notes</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Email/password Auth</td><td><code>auth_screen.dart</code>, <code>auth_repository.dart</code></td><td>Firebase email/password</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>2</td><td>Demo Mode</td><td><code>auth_screen.dart</code>, <code>demo_seed.dart</code></td><td>Local demo user + Nokia Timișoara sample events</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>3</td><td>Firestore events</td><td><code>event_repository.dart</code></td><td>Cloud sync when signed in (not in Demo Mode)</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>4</td><td>Local event store</td><td><code>local_event_store.dart</code></td><td>SharedPreferences-backed local persistence</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>5</td><td>Day / Week / Month views</td><td><code>home_shell.dart</code>, week/month screens</td><td>Day lives in home shell</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>6</td><td>Add event sheet (redesigned)</td><td><code>add_event_sheet.dart</code></td><td>AI composer, categories, when card, optional notes/location</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>7</td><td>Event cards</td><td><code>event_card.dart</code></td><td>Swipe delete, details sheet, shows location</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>8</td><td>Categories + colors</td><td><code>EventCategory</code>, <code>settings_screen.dart</code></td><td>Work / Personal / Health / Social / Shopping / Other</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>9</td><td>Dark Mode (instant)</td><td><code>main.dart</code>, Settings</td><td>Instant toggle — no theme animation (by choice)</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>10</td><td>Search</td><td><code>search_screen.dart</code></td><td>Search events</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>11</td><td>Time reports</td><td><code>time_report_screen.dart</code></td><td>Weekly category stats</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>12</td><td>Settings</td><td><code>settings_screen.dart</code></td><td>Theme, language, toggles, category colors, nav links</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>13</td><td>Voice templates</td><td><code>voice_templates_screen.dart</code></td><td>Custom voice shortcuts UI + provider</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>14</td><td>Voice assistant (Ask DayBrief)</td><td><code>voice_assistant_button.dart</code></td><td>Mic FAB; no need to say wake word when button is used</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>15</td><td>Voice commands</td><td><code>voice_command_service.dart</code></td><td>Schedule queries, add/delete/move intents</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>16</td><td>Driving Mode</td><td><code>driving_mode_screen.dart</code></td><td>Voice-focused driving UI</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>17</td><td>Family calendar</td><td><code>family_calendar_screen.dart</code> + repo</td><td>Firestore-backed; gated in Demo Mode</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>18</td><td>Share calendar</td><td><code>share_calendar_screen.dart</code>, <code>/shared/:code</code></td><td>Public share links</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>19</td><td>Quick Poll</td><td><code>quick_poll_screen.dart</code>, <code>/poll</code></td><td>Create/join polls</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>20</td><td>AI Quick Add</td><td><code>claude_service.dart</code>, <code>server.js</code></td><td>Parse natural language → form (web + proxy)</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>21</td><td>AI daily summary</td><td><code>home_shell.dart</code>, Claude/Gemini proxy</td><td>Sparkle button; needs <code>node server.js</code> + API key</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>22</td><td>Location on events</td><td><code>location_autocomplete_field.dart</code></td><td>Save location; show on card; open in Google Maps</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>23</td><td>Google Places autocomplete</td><td><code>places_service.dart</code>, <code>/api/places/*</code></td><td>Needs <code>GOOGLE_MAPS_API_KEY</code> on server</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>24</td><td>ICS export / import</td><td><code>calendar_sync_screen.dart</code></td><td>Works on web (bytes-based file_picker)</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>25</td><td>go_router + repositories</td><td><code>router/</code>, <code>repositories/</code></td><td>Phase 2 architecture</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>26</td><td>EN / RO localization wired</td><td><code>l10n/</code>, Settings language</td><td>Infrastructure done; many strings still English hardcoded</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>27</td><td>Remediation Phases 0–4</td><td>plan commits on master</td><td>Dead code, Freezed, repos, orphans, a11y/tests/docs</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>28</td><td>Nokia demo seed data</td><td><code>demo_seed.dart</code></td><td>Nokia Timișoara / Iulius / Bega sample schedule</td><td><span class="badge badge-done">Done</span></td></tr>
+        <tr><td>29</td><td>Edit event</td><td><code>add_event_sheet.dart</code>, event details</td><td>Tap event → Edit; same form as add, saves via <code>updateEvent</code></td><td><span class="badge badge-done">Done</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="features-partial">
+    <h2>Partial — exists but incomplete</h2>
+    <table class="feat-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Feature</th>
+          <th>What works</th>
+          <th>What's missing</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Google Sign-In (login)</td><td>Google Sign-In used for Calendar sync scopes</td><td>Not used as account login on auth screen</td><td><span class="badge badge-wip">Partial</span></td></tr>
+        <tr><td>2</td><td>Recurring events</td><td><code>RecurrenceType</code> on model</td><td>No UI picker / no instance expansion</td><td><span class="badge badge-wip">Partial</span></td></tr>
+        <tr><td>3</td><td>Reminders / notifications</td><td>Toggle + <code>reminderEnabled</code> flag</td><td>No real local notification scheduler / FCM</td><td><span class="badge badge-wip">Partial</span></td></tr>
+        <tr><td>4</td><td>Google Calendar sync</td><td>ICS + push-on-connect (mobile/desktop)</td><td>No full bidirectional pull; web OAuth limited</td><td><span class="badge badge-wip">Partial</span></td></tr>
+        <tr><td>5</td><td>Location map preview</td><td>Places search + open in Maps URL</td><td>No embedded <code>google_maps_flutter</code> map widget</td><td><span class="badge badge-wip">Partial</span></td></tr>
+        <tr><td>6</td><td>Multi-language UI</td><td>EN/RO ARB + locale switch</td><td>Most screens still hardcoded English</td><td><span class="badge badge-wip">Partial</span></td></tr>
+        <tr><td>7</td><td>Offline / sqflite</td><td>Local SharedPreferences store; sqflite in pubspec</td><td>sqflite unused; not full offline-first</td><td><span class="badge badge-wip">Partial</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="features-planned">
+    <h2>Not done — still planned</h2>
+    <table class="feat-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Feature</th>
+          <th>Tool / Package</th>
+          <th>Description</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Custom app icon</td><td>flutter_launcher_icons</td><td>Branded launcher icon</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>2</td><td>Home screen widgets</td><td><code>home_widget</code></td><td>Android/iOS widgets</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>3</td><td>Geofence reminders</td><td><code>geolocator</code></td><td>Location-based notifications</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>4</td><td>Event attachments</td><td>file_picker on events</td><td>Attach files to an event</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>5</td><td>Push notifications (FCM)</td><td><code>firebase_messaging</code></td><td>Remote pushes</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>6</td><td>Custom categories</td><td>Category system</td><td>User-defined categories beyond the enum</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>7</td><td>Rich-text event notes</td><td>Event model</td><td>Plain description only today</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>8</td><td>Share event to contacts</td><td>contacts / share_plus</td><td>Per-event contact share flow</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>9</td><td>Multiple calendars</td><td>Calendar system</td><td>Separate Work / Personal / Family calendars</td><td><span class="badge badge-planned">Not done</span></td></tr>
+        <tr><td>10</td><td>Always-on wake word</td><td>speech / platform</td><td>Background “Hey DayBrief” listening</td><td><span class="badge badge-planned">Not done</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="stack">
+    <h2>Technical Stack (current)</h2>
+    <h3>In use</h3>
+    <div class="pkg-grid">
+      <div class="pkg-card"><div class="pkg-name">firebase_core / auth / firestore</div><div class="pkg-desc">Auth + cloud events</div></div>
+      <div class="pkg-card"><div class="pkg-name">provider</div><div class="pkg-desc">State management</div></div>
+      <div class="pkg-card"><div class="pkg-name">go_router</div><div class="pkg-desc">Routing + shell</div></div>
+      <div class="pkg-card"><div class="pkg-name">freezed + json_serializable</div><div class="pkg-desc">Models</div></div>
+      <div class="pkg-card"><div class="pkg-name">speech_to_text / flutter_tts</div><div class="pkg-desc">Voice</div></div>
+      <div class="pkg-card"><div class="pkg-name">google_sign_in + http</div><div class="pkg-desc">Calendar API / Places proxy client</div></div>
+      <div class="pkg-card"><div class="pkg-name">file_picker / share_plus / url_launcher</div><div class="pkg-desc">ICS, share, Maps links</div></div>
+      <div class="pkg-card"><div class="pkg-name">shared_preferences</div><div class="pkg-desc">Local store + settings</div></div>
+      <div class="pkg-card"><div class="pkg-name">flutter_localizations</div><div class="pkg-desc">EN/RO gen-l10n</div></div>
+      <div class="pkg-card"><div class="pkg-name">server.js (Node)</div><div class="pkg-desc">Gemini/Claude AI + Places proxy</div></div>
+    </div>
+    <h3>Listed but not finished / unused</h3>
+    <div class="pkg-grid">
+      <div class="pkg-card future"><div class="pkg-name">sqflite</div><div class="pkg-desc">In pubspec — not the active local store</div></div>
+      <div class="pkg-card future"><div class="pkg-name">firebase_messaging</div><div class="pkg-desc">Not integrated</div></div>
+      <div class="pkg-card future"><div class="pkg-name">geolocator / home_widget / google_maps_flutter</div><div class="pkg-desc">Not added for product features yet</div></div>
+      <div class="pkg-card future"><div class="pkg-name">flutter_local_notifications</div><div class="pkg-desc">Not wired — reminder toggles only</div></div>
+    </div>
+  </section>
+
+  <section id="structure">
+    <h2>File Structure — lib/ (current)</h2>
+    <div class="file-tree">
+<span class="dir">lib/</span>
+<span class="indent1 file">├── main.dart</span>
+<span class="indent1 file">├── firebase_options.dart</span>
+<span class="indent1 dir">├── app/</span>
+<span class="indent2 file">└── app_scope.dart</span>
+<span class="indent1 dir">├── config/</span>
+<span class="indent2 file">└── api_base.dart                 <span class="comment">// AI/Places base URL for flutter run</span></span>
+<span class="indent1 dir">├── models/</span>
+<span class="indent2 file">├── event.dart</span>
+<span class="indent2 file">└── voice_template.dart (+ family/poll models)</span>
+<span class="indent1 dir">├── repositories/</span>
+<span class="indent2 file">├── auth / event / family / poll / share / voice_template</span>
+<span class="indent1 dir">├── providers/</span>
+<span class="indent2 file">├── auth / event / settings / voice / voice_template / family / poll</span>
+<span class="indent1 dir">├── router/</span>
+<span class="indent2 file">├── app_router.dart</span>
+<span class="indent2 file">└── home_shell.dart               <span class="comment">// replaces home_screen.dart</span></span>
+<span class="indent1 dir">├── screens/</span>
+<span class="indent2 file">├── auth, week, month, search, settings</span>
+<span class="indent2 file">├── family, share, shared view, poll</span>
+<span class="indent2 file">├── driving, calendar_sync, voice_templates, time_report</span>
+<span class="indent1 dir">├── services/</span>
+<span class="indent2 file">├── claude_service, places_service, speech, voice_command</span>
+<span class="indent2 file">├── google_calendar, local_event_store, poll, share</span>
+<span class="indent1 dir">├── widgets/</span>
+<span class="indent2 file">├── add_event_sheet, event_card, location_autocomplete_field</span>
+<span class="indent2 file">├── voice_assistant_button, animated_theme</span>
+<span class="indent1 dir">├── utils/</span>
+<span class="indent2 file">└── demo_seed.dart                <span class="comment">// Nokia Timișoara demo events</span></span>
+<span class="indent1 dir">└── l10n/</span>
+<span class="indent2 file">└── EN / RO ARB + generated</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Nokia Timișoara demo notes</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">
+      Present with <strong style="color:var(--text)">Demo Mode</strong>. Highlight Day/Week/Month, seeded events, AI Quick Add + summary (proxy running), Ask DayBrief voice, locations.
+      Avoid Family / Share / Poll / Google Connect unless real accounts are ready.
+      Phone handoff needs an APK or hosted build — not <code>localhost</code>.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  DayBrief Project &mdash; <span>Flutter + Firebase</span> &mdash; Updated August 3, 2026 &mdash; Status audit vs codebase
+</footer>
+
+</body>
+</html>
